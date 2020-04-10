@@ -137,7 +137,8 @@ public class ClassPathXmlApplicationContext extends AbstractXmlApplicationContex
 	public ClassPathXmlApplicationContext(
 			String[] configLocations, boolean refresh, @Nullable ApplicationContext parent)
 			throws BeansException {
-
+		// new ClassPathXmlApplicationContext("spring-env-test.xml")
+		// refresh=true , parent=null
 		super(parent);
 		setConfigLocations(configLocations);
 		if (refresh) {

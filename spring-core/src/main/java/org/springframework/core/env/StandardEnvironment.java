@@ -75,8 +75,12 @@ public class StandardEnvironment extends AbstractEnvironment {
 	 */
 	@Override
 	protected void customizePropertySources(MutablePropertySources propertySources) {
+		// getSystemProperties()=(Map) System.getProperties()
+		// 用系统属性替换配置文件的占位符
 		propertySources.addLast(
 				new PropertiesPropertySource(SYSTEM_PROPERTIES_PROPERTY_SOURCE_NAME, getSystemProperties()));
+		// getSystemEnvironment()=(Map) System.getenv()
+		// 使用系统环境变量替换配置文件的占位符
 		propertySources.addLast(
 				new SystemEnvironmentPropertySource(SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME, getSystemEnvironment()));
 	}

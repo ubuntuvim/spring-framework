@@ -226,6 +226,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * Create a new AbstractApplicationContext with no parent.
 	 */
 	public AbstractApplicationContext() {
+		// 获取资源处理器（读取spring配置文件）
 		this.resourcePatternResolver = getResourcePatternResolver();
 	}
 
@@ -234,7 +235,9 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * @param parent the parent context
 	 */
 	public AbstractApplicationContext(@Nullable ApplicationContext parent) {
+		// 初始化并获取到资源处理器类，读取到spring配置文件。
 		this();
+		// 初始化系统环境变量、项目配置
 		setParent(parent);
 	}
 
@@ -326,6 +329,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * a custom {@link ConfigurableEnvironment} implementation.
 	 */
 	protected ConfigurableEnvironment createEnvironment() {
+		// 返回一个标准的环境变量实例，里面包含了系统环境变量、项目属性配置（项目启动的jdk\classpath\etc...
 		return new StandardEnvironment();
 	}
 
@@ -519,6 +523,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			prepareRefresh();
 
 			// Tell the subclass to refresh the internal bean factory.
+			// 刷新bean工厂
 			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
 
 			// Prepare the bean factory for use in this context.
@@ -541,6 +546,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				initApplicationEventMulticaster();
 
 				// Initialize other special beans in specific context subclasses.
+				// 在上下文中初始化其他的bean
 				onRefresh();
 
 				// Check for listener beans and register them.
@@ -597,9 +603,11 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		}
 
 		// Initialize any placeholder property sources in the context environment.
+		// 初始化上下文中任何配置文件的占位符，比如properties文件中的${}，由子类实现。
 		initPropertySources();
 
 		// Validate that all properties marked as required are resolvable:
+		// 验证所有标记为必需的属性都是可解析的
 		// see ConfigurablePropertyResolver#setRequiredProperties
 		getEnvironment().validateRequiredProperties();
 
@@ -807,6 +815,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 	/**
 	 * Template method which can be overridden to add context-specific refresh work.
+	 * 可重写的模板方法，在当前bean初始化之前调用其他的bean
 	 * Called on initialization of special beans, before instantiation of singletons.
 	 * <p>This implementation is empty.
 	 * @throws BeansException in case of errors
