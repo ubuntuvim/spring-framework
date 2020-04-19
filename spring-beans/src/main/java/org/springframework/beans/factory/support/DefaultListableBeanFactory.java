@@ -842,6 +842,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		return (this.configurationFrozen || super.isBeanEligibleForMetadataCaching(beanName));
 	}
 
+	// 实例化所有除了Spring内部的单例（懒加载的除外）
 	@Override
 	public void preInstantiateSingletons() throws BeansException {
 		if (logger.isTraceEnabled()) {
@@ -850,16 +851,27 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 		// Iterate over a copy to allow for init methods which in turn register new bean definitions.
 		// While this may not be part of the regular factory bootstrap, it does otherwise work fine.
+		// 创建BeanDefinitionName副本，用于后续遍历，以允许init等方法注册新的bean定义
 		List<String> beanNames = new ArrayList<>(this.beanDefinitionNames);
 
 		// Trigger initialization of all non-lazy singleton beans...
+		// 遍历所有的beanName，通过beanName获取到对应的bean实例
 		for (String beanName : beanNames) {
+			// 根据bean名称拿到bean定义
 			RootBeanDefinition bd = getMergedLocalBeanDefinition(beanName);
+			// bean定义非抽象类，是单例，非懒加载
 			if (!bd.isAbstract() && bd.isSingleton() && !bd.isLazyInit()) {
+				// 判断是否是FactoryBean
+				// Spring有两种类型的Bean，一种普通Bean，一种是工厂Bean即FactoryBean，FactoryBean和普通Bean不同，
+				// 它返回的对象不是一个指定类型的对象，而是根据FactoryBean<T>.geteObject()返回对象，返回的对象就是T类型的，
+				// 创建出来的对象是否为单例是根据Bean定义中的isSingleton属性决定的（默认是单例）
 				if (isFactoryBean(beanName)) {
+					// 通过getBean(&beanName)拿到是FactoryBean本身，FACTORY_BEAN_PREFIX=&
+					// 通过getBean(beanName)拿到的是FactoryBean创建的bean实例
 					Object bean = getBean(FACTORY_BEAN_PREFIX + beanName);
 					if (bean instanceof FactoryBean) {
 						final FactoryBean<?> factory = (FactoryBean<?>) bean;
+						// 判断bean是否需要急切初始化
 						boolean isEagerInit;
 						if (System.getSecurityManager() != null && factory instanceof SmartFactoryBean) {
 							isEagerInit = AccessController.doPrivileged((PrivilegedAction<Boolean>)
@@ -871,21 +883,29 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 									((SmartFactoryBean<?>) factory).isEagerInit());
 						}
 						if (isEagerInit) {
+							// 通过beanName获取bean实例
 							getBean(beanName);
 						}
 					}
 				}
 				else {
-					getBean(beanName);
+					// 普通的bean直接通过beanName获取bean实例
+					getBean(beanName);  // 转到AbstractBeanFactory
 				}
 			}
 		}
 
+		// =========================================================================
+		// 到此单例bean都已经实例化完毕，
+
 		// Trigger post-initialization callback for all applicable beans...
+		// 判断是否有实现了SmartInittializingSingleton的实现类，通常是Spring内部的实现类，也是Spring提供的一个很重要的扩展点
 		for (String beanName : beanNames) {
 			Object singletonInstance = getSingleton(beanName);
 			if (singletonInstance instanceof SmartInitializingSingleton) {
 				final SmartInitializingSingleton smartSingleton = (SmartInitializingSingleton) singletonInstance;
+				// bean实例化后调用bean的afterSingletonsInstantiated方法，用户可以实现SmartInitializingSingleton接口，
+				// 在bean实例化后做一些自定义的操作，比如重置实例的某些属性，但是要注意只能处理非懒加载的单例bean
 				if (System.getSecurityManager() != null) {
 					AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
 						smartSingleton.afterSingletonsInstantiated();

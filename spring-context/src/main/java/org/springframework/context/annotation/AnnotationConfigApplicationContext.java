@@ -129,6 +129,11 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 				AnnotationConfigUtils.CONFIGURATION_BEAN_NAME_GENERATOR, beanNameGenerator);
 	}
 
+	@Override
+	public <T> void registerBean(Class<T> beanClass, Object... constructorArgs) {
+		super.registerBean(beanClass, constructorArgs);
+	}
+
 	/**
 	 * Set the {@link ScopeMetadataResolver} to use for registered component classes.
 	 * <p>The default is an {@link AnnotationScopeMetadataResolver}.
@@ -177,6 +182,7 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 
 	//---------------------------------------------------------------------
 	// Adapt superclass registerBean calls to AnnotatedBeanDefinitionReader
+	// 调用AnnotatedBeanDefinitionReader适配父类registerBean
 	//---------------------------------------------------------------------
 
 	@Override

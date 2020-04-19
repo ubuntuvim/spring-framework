@@ -121,6 +121,8 @@ abstract class ConfigurationClassUtils {
 			}
 		}
 
+		// 获取bean定义信息，判断如果类加了@Configuration注解则设置configurationClass属性值为full，
+		// 否则判断bean定义是否加了@Component/@ComponentScan/@Import/@ImportResource/注解，则设置属性configurationClass值为lite
 		Map<String, Object> config = metadata.getAnnotationAttributes(Configuration.class.getName());
 		if (config != null && !Boolean.FALSE.equals(config.get("proxyBeanMethods"))) {
 			beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_FULL);

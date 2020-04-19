@@ -11,17 +11,20 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 public class EnvTest {
 	public static void main(String[] args) {
 
-		ApplicationContext applicationContext = new ClassPathXmlApplicationContext("spring-env-test.xml");
-		TestBean testBean = (TestBean) applicationContext.getBean("testBean");
-		testBean.setName("ubuntuvim");
-		System.out.println(testBean);
+//		ApplicationContext applicationContext = new ClassPathXmlApplicationContext("spring-env-test.xml");
+//		TestBean testBean = (TestBean) applicationContext.getBean("testBean");
+//		testBean.setName("ubuntuvim");
+//		System.out.println(testBean);
 //		System.out.println("\n\n\n" + System.getenv() + "\n\n\n");
 //		System.out.println("\n\n\n" + System.getProperties() + "\n\n\n");
 
-		ApplicationContext applicationContext2 = new AnnotationConfigApplicationContext(AppConfig.class);
-		ConfigBean configBean = applicationContext2.getBean(ConfigBean.class);
+		ApplicationContext applicationContext = new AnnotationConfigApplicationContext(AppConfig.class);
+		ConfigBean configBean = applicationContext.getBean(ConfigBean.class);
 		System.out.println(configBean);
-
+		configBean.start();
+		configBean.stop();
+//		TestBean testBean = (TestBean) applicationContext.getBean("testBean");
+//		System.out.println(testBean);
 	}
 
 }

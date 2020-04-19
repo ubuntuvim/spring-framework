@@ -168,21 +168,41 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * Return the (raw) singleton object registered under the given name.
 	 * <p>Checks already instantiated singletons and also allows for an early
 	 * reference to a currently created singleton (resolving a circular reference).
+	 * 返回给定名字的已经注册的（原始）单例对象，检查已经实例化的单例并且允许早期引用到当前创建的单例对象上（解决循环依赖问题）
+	 * 解决循环依赖逻辑：
+	 * 使用无参构造方法先创建出一个"不完整"的bean实例（此时的bean还没有任何属性的赋值），
+	 * 并且暴露该bean实例的ObjectFactory（提前暴露就是将ObjectFactory放到singletonFactories缓存里面），
+	 * 通过ObjectFactory可以拿到该实例的引用，如果出现循环依赖，可以通过缓存中的ObjectFactory拿到bean实例，
+	 * 从而避免出现循环引用导致死循环。（比如A依赖B，B依赖C，C依赖A时，首先使用无参构造方法创建这三个对象，但是不对类里面的属性赋值（比如A里面的有一个B类的属性），
+	 * 等A，B，C三个实例都构建出来的之后再设置类里面的属性）。通过缓存中ObjecjFactory拿到的bean实例虽然是"不完整"的bean实例，但是由于是单例，后续初始化完整后
+	 * 该单例bean实例的引用不会变。
 	 * @param beanName the name of the bean to look for
 	 * @param allowEarlyReference whether early references should be created or not
 	 * @return the registered singleton object, or {@code null} if none found
 	 */
 	@Nullable
 	protected Object getSingleton(String beanName, boolean allowEarlyReference) {
+		// 先从缓存中获取beanName对应的单例
 		Object singletonObject = this.singletonObjects.get(beanName);
+		// 如果缓存中没有对应的单例，并且该实例正在创建中
 		if (singletonObject == null && isSingletonCurrentlyInCreation(beanName)) {
 			synchronized (this.singletonObjects) {
+				//从早期的单例对象缓存中获取单例对象（之所以成为早期是因为earlySingletonObjects里面存放的对象
+				// 都是提前暴露ObjectFactory创建出来的，这些实例都是空的，还没进行任何的属性填充）
 				singletonObject = this.earlySingletonObjects.get(beanName);
+				// 如果早期的bean实例也没有，并且允许创建早期的单例对象引用。IoC容器初始化的时候
+				// 参数allowEarlyReference默认都是true
 				if (singletonObject == null && allowEarlyReference) {
+					// 从单例工厂缓存中获取beanName对应的单例工厂
 					ObjectFactory<?> singletonFactory = this.singletonFactories.get(beanName);
 					if (singletonFactory != null) {
+						// 如果存在单例工厂则通过单例工厂创建bean实例
 						singletonObject = singletonFactory.getObject();
+						// 通过单例工厂创建出来的单例对象放到早期的单例缓存数组里面
 						this.earlySingletonObjects.put(beanName, singletonObject);
+						// 移除该beanName对应的单例工厂，因为该单例已经通过单例工厂创建了一个单例对象，
+						// 并且放到早期的单例缓存数组中，因此后续获取该beanName的单例对象时可以直接从缓存获取，
+						// 不需要再通过单例工厂创建该单例对象，如果再创建就不是单例了。
 						this.singletonFactories.remove(beanName);
 					}
 				}

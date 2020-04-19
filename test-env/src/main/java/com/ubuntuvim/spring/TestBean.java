@@ -7,8 +7,8 @@ public class TestBean {
 	@Override
 	public String toString() {
 		final StringBuffer sb = new StringBuffer("TestBean{");
-		sb.append("name='").append(name).append('\'');
-		sb.append(", address='").append(address).append('\'');
+		sb.append("name='").append(this.name).append('\'');
+		sb.append(", address='").append(this.address).append('\'');
 		sb.append('}');
 		return sb.toString();
 	}

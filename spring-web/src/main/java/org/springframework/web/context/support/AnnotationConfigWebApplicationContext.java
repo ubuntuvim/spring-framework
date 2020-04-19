@@ -176,6 +176,7 @@ public class AnnotationConfigWebApplicationContext extends AbstractRefreshableWe
 	 * Register a {@link org.springframework.beans.factory.config.BeanDefinition} for
 	 * any classes specified by {@link #register(Class...)} and scan any packages
 	 * specified by {@link #scan(String...)}.
+	 * 扫描并注册
 	 * <p>For any values specified by {@link #setConfigLocation(String)} or
 	 * {@link #setConfigLocations(String[])}, attempt first to load each location as a
 	 * class, registering a {@code BeanDefinition} if class loading is successful,

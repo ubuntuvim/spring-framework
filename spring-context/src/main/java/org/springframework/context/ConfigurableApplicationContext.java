@@ -31,10 +31,12 @@ import org.springframework.lang.Nullable;
  * Provides facilities to configure an application context in addition
  * to the application context client methods in the
  * {@link org.springframework.context.ApplicationContext} interface.
+ * SPI接口大多数都是有应用程序上下文实现的。提供了上下文配置功能，以及ApplicationContext中提供的客户端接口方法
  *
  * <p>Configuration and lifecycle methods are encapsulated here to avoid
  * making them obvious to ApplicationContext client code. The present
  * methods should only be used by startup and shutdown code.
+ * 配置的和生命周期的方法都被封装在此类中，以避免在ApplicationContext客户端代码中可编程，这些方法应该用来容器启动和关闭的时候调用
  *
  * @author Juergen Hoeller
  * @author Chris Beams
@@ -46,6 +48,7 @@ public interface ConfigurableApplicationContext extends ApplicationContext, Life
 	/**
 	 * Any number of these characters are considered delimiters between
 	 * multiple context config paths in a single String value.
+	 * 上下文配置文件的路径分隔符，比如：application.xml,application2.xml service.xml;dao.xml
 	 * @see org.springframework.context.support.AbstractXmlApplicationContext#setConfigLocation
 	 * @see org.springframework.web.context.ContextLoader#CONFIG_LOCATION_PARAM
 	 * @see org.springframework.web.servlet.FrameworkServlet#setContextConfigLocation
@@ -55,6 +58,7 @@ public interface ConfigurableApplicationContext extends ApplicationContext, Life
 	/**
 	 * Name of the ConversionService bean in the factory.
 	 * If none is supplied, default conversion rules apply.
+	 * 默认的上下文转换器的beanName
 	 * @since 3.0
 	 * @see org.springframework.core.convert.ConversionService
 	 */
@@ -98,6 +102,7 @@ public interface ConfigurableApplicationContext extends ApplicationContext, Life
 
 	/**
 	 * Set the unique id of this application context.
+	 * 上下文容器唯一id
 	 * @since 3.0
 	 */
 	void setId(String id);
@@ -162,6 +167,9 @@ public interface ConfigurableApplicationContext extends ApplicationContext, Life
 	 * <p>As this is a startup method, it should destroy already created singletons
 	 * if it fails, to avoid dangling resources. In other words, after invocation
 	 * of that method, either all or no singletons at all should be instantiated.
+	 * 加载或刷新配置的持久表示，该表示可以是XML文件、属性文件或关系数据库模式。
+	 * 由于这是一种启动方法，如果失败，它应该销毁已经创建的单体，以避免浪费资源。
+	 * 换言之，在调用该方法之后，所有实例化的或不需要的单实例化都应该被实例化。
 	 * @throws BeansException if the bean factory could not be initialized
 	 * @throws IllegalStateException if already initialized and multiple refresh
 	 * attempts are not supported
@@ -211,6 +219,12 @@ public interface ConfigurableApplicationContext extends ApplicationContext, Life
 	 * is active, that is, in-between {@link #refresh()} and {@link #close()}.
 	 * The {@link #isActive()} flag can be used to check whether the context
 	 * is in an appropriate state.
+	 * 返回此上下文内部的Bean工厂，可以用来访问底层工厂的特定功能。
+	 * 注意：不要用这个方法对bean工厂进行后处理，因为单例bean之前就已经被初始化了。
+	 * 使用BeanFactoryPostProcessor来拦截Bean之前的BeanFactory设置过程可能会出现无法预知的结果。
+	 * 通常情况下，内部工厂只能在上下文激活时被访问，也就是说，介于refresh()和close()这两个方法执行之间的工厂。
+	 * isActive()方法可用于检查上下文是否处于适当的状态。
+	 *
 	 * @return the underlying bean factory
 	 * @throws IllegalStateException if the context does not hold an internal
 	 * bean factory (usually if {@link #refresh()} hasn't been called yet or
