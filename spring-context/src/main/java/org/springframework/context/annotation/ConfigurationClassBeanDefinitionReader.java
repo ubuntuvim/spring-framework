@@ -141,14 +141,18 @@ class ConfigurationClassBeanDefinitionReader {
 			registerBeanDefinitionForImportedConfigurationClass(configClass);
 		}
 		for (BeanMethod beanMethod : configClass.getBeanMethods()) {
+			// 注册@Bean注解方法指定的bean定义到容器中
 			loadBeanDefinitionsForBeanMethod(beanMethod);
 		}
 
+		// 配置类是否使用了@ImportResource注解，通过这个注入可以导入其他的类
 		loadBeanDefinitionsFromImportedResources(configClass.getImportedResources());
+		// 配置类是否实现ImportBeanDefinitionRegistrar接口。如果有则执行接口registerBeanDefinitions方法
 		loadBeanDefinitionsFromRegistrars(configClass.getImportBeanDefinitionRegistrars());
 	}
 
 	/**
+	 * 把配置类本身转化成bean定义注册到容器中
 	 * Register the {@link Configuration} class itself as a bean definition.
 	 */
 	private void registerBeanDefinitionForImportedConfigurationClass(ConfigurationClass configClass) {

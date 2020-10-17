@@ -17,6 +17,16 @@
 package org.springframework.beans.factory;
 
 /**
+ * 实现该接口后，当所有单例 bean 都初始化完成以后， 容器会回调该接口的方法 afterSingletonsInstantiated。
+ * 主要应用场合就是在所有单例 bean 创建完成之后，可以在该回调中做一些事情。
+ * @PostConstruct是最先被执行的，然后是InitializingBean，最后是SmartInitializingSingleton
+ *
+ * 为什么是在当所有单例 bean 都初始化完成以后才执行这个接口的原因直接看源码就知道了：
+ * AbstractApplicationContext.refresh() -> finishBeanFactoryInitialization() -> ConfigurableListableBeanFactory.preInstantiateSingletons()
+ *
+ * 但是需要注意：不要再次接口中提前使用容器管理的bean对象，
+ * 因为此时直接通过getBean()方法获取到的实例还没通过IoC容器的其他初始化后置处理的增强。
+ *
  * Callback interface triggered at the end of the singleton pre-instantiation phase
  * during {@link BeanFactory} bootstrap. This interface can be implemented by
  * singleton beans in order to perform some initialization after the regular

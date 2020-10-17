@@ -31,12 +31,16 @@ import org.springframework.lang.Nullable;
  * creating a new internal bean factory instance every time.
  * Typically (but not necessarily), such a context will be driven by
  * a set of config locations to load bean definitions from.
+ * ApplicationContext实现的基类，应该支持对AbstractApplicationContext.refresh()多次调用。
+ * 每次创建一个新的内部bean工厂实例，通常（但是不是必须的）这样的上下文将由一组本地配置文件加载bean定义到容器中。
  *
  * <p>The only method to be implemented by subclasses is {@link #loadBeanDefinitions},
  * which gets invoked on each refresh. A concrete implementation is supposed to load
  * bean definitions into the given
  * {@link org.springframework.beans.factory.support.DefaultListableBeanFactory},
  * typically delegating to one or more specific bean definition readers.
+ * 唯一需要子类实现的方法loadBeanDefinitions()，每次刷新容器都会调用次方法，用于加载bean定义到DefaultListableBeanFactory中。
+ * bean的加载通常会通过一个或者多个委托类加载。
  *
  * <p><b>Note that there is a similar base class for WebApplicationContexts.</b>
  * {@link org.springframework.web.context.support.AbstractRefreshableWebApplicationContext}
@@ -120,9 +124,11 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 	 * bean factory, shutting down the previous bean factory (if any) and
 	 * initializing a fresh bean factory for the next phase of the context's lifecycle.
 	 * 实现上下文刷新，如果已经有bean fatory则先关闭，再重新初始化一个bean factory。
+	 * 此方法会在AbstractApplicationContext的refresh()方法中被调用
 	 */
 	@Override
 	protected final void refreshBeanFactory() throws BeansException {
+		// 先判断是否已经存在BeanFactory，如果当前线程已经初始化过了，则先销毁重新创建一个
 		if (hasBeanFactory()) {
 			destroyBeans();
 			closeBeanFactory();
@@ -130,7 +136,11 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 		try {
 			DefaultListableBeanFactory beanFactory = createBeanFactory();
 			beanFactory.setSerializationId(getId());
+			// 容器定制化，设置启动参数、开启注解自动装配等等。
 			customizeBeanFactory(beanFactory);
+			// 加载bean定义，非常重要的一个方法
+			// 由子类AbstractXmlApplicationContext实现加载bean定义
+			// 使用委派模式，父类定义抽象，具体实现由子类实现
 			loadBeanDefinitions(beanFactory);
 			synchronized (this.beanFactoryMonitor) {
 				this.beanFactory = beanFactory;
@@ -224,9 +234,11 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 	 */
 	protected void customizeBeanFactory(DefaultListableBeanFactory beanFactory) {
 		if (this.allowBeanDefinitionOverriding != null) {
+			//  设置是否可以覆盖同名字的bean定义，默认是true
 			beanFactory.setAllowBeanDefinitionOverriding(this.allowBeanDefinitionOverriding);
 		}
 		if (this.allowCircularReferences != null) {
+			//  是否允许循环引用，默认是false
 			beanFactory.setAllowCircularReferences(this.allowCircularReferences);
 		}
 	}
@@ -234,6 +246,8 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 	/**
 	 * Load bean definitions into the given bean factory, typically through
 	 * delegating to one or more bean definition readers.
+	 * 每次刷新都会调用此方法，由子类实现
+	 * 通过委托类加载bean定义并注册到beanfactory实例
 	 * @param beanFactory the bean factory to load bean definitions into
 	 * @throws BeansException if parsing of the bean definitions failed
 	 * @throws IOException if loading of bean definition files failed

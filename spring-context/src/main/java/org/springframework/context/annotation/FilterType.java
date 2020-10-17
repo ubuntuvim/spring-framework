@@ -33,24 +33,28 @@ public enum FilterType {
 
 	/**
 	 * Filter candidates marked with a given annotation.
+	 * ANNOTATION：注解类型
 	 * @see org.springframework.core.type.filter.AnnotationTypeFilter
 	 */
 	ANNOTATION,
 
 	/**
 	 * Filter candidates assignable to a given type.
+	 * 指定某个全路径的类，比如com.ubuntuvim.spring.UserServiceImpl
 	 * @see org.springframework.core.type.filter.AssignableTypeFilter
 	 */
 	ASSIGNABLE_TYPE,
 
 	/**
 	 * Filter candidates matching a given AspectJ type pattern expression.
+	 * 按照Aspectj的表达式，基本上不会用到
 	 * @see org.springframework.core.type.filter.AspectJTypeFilter
 	 */
 	ASPECTJ,
 
 	/**
-	 * Filter candidates matching a given regex pattern.
+	 * Filter candidates matching a given regex pattern
+	 * 	 * 正则表达式匹配的类，比如：com.ubuntuvim.spring..* ,指定com.ubuntuvim.spring下的所有类.
 	 * @see org.springframework.core.type.filter.RegexPatternTypeFilter
 	 */
 	REGEX,

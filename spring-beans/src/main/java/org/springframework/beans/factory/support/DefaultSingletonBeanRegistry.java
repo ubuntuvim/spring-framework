@@ -16,26 +16,15 @@
 
 package org.springframework.beans.factory.support;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.springframework.beans.factory.BeanCreationException;
-import org.springframework.beans.factory.BeanCreationNotAllowedException;
-import org.springframework.beans.factory.BeanCurrentlyInCreationException;
-import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.ObjectFactory;
+import org.springframework.beans.factory.*;
 import org.springframework.beans.factory.config.SingletonBeanRegistry;
 import org.springframework.core.SimpleAliasRegistry;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Generic registry for shared bean instances, implementing the
@@ -132,9 +121,16 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 */
 	protected void addSingleton(String beanName, Object singletonObject) {
 		synchronized (this.singletonObjects) {
+			// 用于保存BeanName和创建bean实例之间的关系，bean name --> bean instance
+			// 单例缓存，已经创建好的单例缓存起来下次直接从缓存获取，获取出来的是一个完整已经初始化好的bean对象，一级缓存
 			this.singletonObjects.put(beanName, singletonObject);
+			// 用于保存beanName和创建bean的工厂之间的关系，bean name --> ObjectFactory
+			// 从单例工厂移除bean，说明bean已经创建好了，二级缓存
 			this.singletonFactories.remove(beanName);
+			// 早期单例对象缓存（实例化但还未初始化属性值的bean，一个半成对象）提前暴露解决循环依赖问题，三级缓存
+			// 由于创建好的半成品对象的内存地址不会变化了（已经在虚拟机的堆中分配了内存地址）所以可以提前暴露出来，也可以做成属性值赋值给其他类
 			this.earlySingletonObjects.remove(beanName);
+			// 已经注册完比的单例缓存
 			this.registeredSingletons.add(beanName);
 		}
 	}
@@ -214,6 +210,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	/**
 	 * Return the (raw) singleton object registered under the given name,
 	 * creating and registering a new one if none registered yet.
+	 * 通过ObjectFactory接口的getObject方法创建对象。
 	 * @param beanName the name of the bean
 	 * @param singletonFactory the ObjectFactory to lazily create the singleton
 	 * with, if necessary
@@ -222,6 +219,8 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	public Object getSingleton(String beanName, ObjectFactory<?> singletonFactory) {
 		Assert.notNull(beanName, "Bean name must not be null");
 		synchronized (this.singletonObjects) {
+			// 先从单例缓存中获取需要创建的对象，从单例缓存中获取到的是一个完整对象、已经经过初始化的bean对象。
+			// 这个单例缓存也就是常说的一级缓存
 			Object singletonObject = this.singletonObjects.get(beanName);
 			if (singletonObject == null) {
 				if (this.singletonsCurrentlyInDestruction) {
@@ -232,6 +231,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 				if (logger.isDebugEnabled()) {
 					logger.debug("Creating shared instance of singleton bean '" + beanName + "'");
 				}
+				// 在创建单例之前先设置一个标记，标记当前的bean正在创建
 				beforeSingletonCreation(beanName);
 				boolean newSingleton = false;
 				boolean recordSuppressedExceptions = (this.suppressedExceptions == null);
@@ -239,6 +239,11 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 					this.suppressedExceptions = new LinkedHashSet<>();
 				}
 				try {
+					/**
+					 * 通过单例工厂方式创建对象，这个接口的实现类就是参数传进来的匿名类。简单代码如下：
+					 * getSingleton(beanName, () -> AbstractAutowireCapableBeanFactory.createBean(beanName, mbd, args))
+					 * @see AbstractAutowireCapableBeanFactory#createBean (String beanName, RootBeanDefinition mbd, @Nullable Object[] args)
+					 */
 					singletonObject = singletonFactory.getObject();
 					newSingleton = true;
 				}
@@ -262,9 +267,11 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 					if (recordSuppressedExceptions) {
 						this.suppressedExceptions = null;
 					}
+					// 清除当前bean正在创建的标记，表示这个beanName已经创建好单例对象
 					afterSingletonCreation(beanName);
 				}
 				if (newSingleton) {
+					// 单例对象创建完成之后设置到缓存里面，下次直接从缓存获取
 					addSingleton(beanName, singletonObject);
 				}
 			}

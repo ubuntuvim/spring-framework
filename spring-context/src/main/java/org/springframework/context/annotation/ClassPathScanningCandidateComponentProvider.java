@@ -201,6 +201,8 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	 * <p>Also supports Java EE 6's {@link javax.annotation.ManagedBean} and
 	 * JSR-330's {@link javax.inject.Named} annotations, if available.
 	 *
+	 * 1. 把注解@Component添加到include过滤器中，注册@Component时会隐式注册了@Service/@Repository/@Controller注解。
+	 * 2. 把注释@ManageBean/@Named注解添加到include过滤器中。
 	 */
 	@SuppressWarnings("unchecked")
 	protected void registerDefaultFilters() {

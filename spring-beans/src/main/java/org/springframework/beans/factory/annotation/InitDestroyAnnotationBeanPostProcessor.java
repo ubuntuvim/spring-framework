@@ -16,26 +16,8 @@
 
 package org.springframework.beans.factory.annotation;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.Serializable;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.config.DestructionAwareBeanPostProcessor;
@@ -47,6 +29,16 @@ import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.lang.Nullable;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
+
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.Serializable;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * {@link org.springframework.beans.factory.config.BeanPostProcessor} implementation
@@ -70,6 +62,14 @@ import org.springframework.util.ReflectionUtils;
  * annotations out of the box, as init annotation and destroy annotation, respectively.
  * Furthermore, it also supports the {@link javax.annotation.Resource} annotation
  * for annotation-driven injection of named beans.
+ *
+ * 该类的主要作用是调用带注释的 init 和 destroy 方法(@PostConstruct和@PreDestroy注释），
+ * 其允许使用注解替代 Spring 的 InitializingBean 和 DisposableBean 回调接口
+ * （这点在前面的博文中介绍过，Spring 支持三种形式的初始化和销毁方法回调），
+ * 并且可以通过 setInitAnnotationType 和 setDestroyAnnotationType
+ * 方法来配置此 BeanPostProcessor 检查的实际注解类型（因为这里的注解不需要属性参数，所以可以自定义任何形式注解）。
+ * 同时，初始化和销毁注解可以应用于任何可见性的方法（public，package-protected，protected 或者 private 均可），
+ * 并且支持同时注解多个此类方法，但是根据 Spring 的建议应尽量仅注解一个的 init 方法和一个 destroy 方法。
  *
  * @author Juergen Hoeller
  * @since 2.5

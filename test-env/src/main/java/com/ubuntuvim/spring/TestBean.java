@@ -1,5 +1,8 @@
 package com.ubuntuvim.spring;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class TestBean {
 	String name;
 	String address;
@@ -19,5 +22,13 @@ public class TestBean {
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	public String getAddress() {
+		return address;
+	}
+
+	public void setAddress(String address) {
+		this.address = address;
 	}
 }

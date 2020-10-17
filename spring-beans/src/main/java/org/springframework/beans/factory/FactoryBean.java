@@ -132,6 +132,12 @@ public interface FactoryBean<T> {
 	 * {@code isSingleton()} implementation returns {@code false}.
 	 * <p>The default implementation returns {@code true}, since a
 	 * {@code FactoryBean} typically manages a singleton instance.
+	 *
+	 * 返回由FactoryBean创建的bean实例的作用域是singleton还是prototype，
+	 * 如果返回false，表示由这个FactoryBean创建的对象是多例的，
+	 * 那么我们每次从容器中getBean的时候都会去重新调用FactoryBean中的getObject方法获取一个新的对象。
+	 * 若返回true，表示创建的对象是单例的，那么我们每次从容器中获取这个对象的时候都是同一个对象。
+	 *
 	 * @return whether the exposed object is a singleton
 	 * @see #getObject()
 	 * @see SmartFactoryBean#isPrototype()

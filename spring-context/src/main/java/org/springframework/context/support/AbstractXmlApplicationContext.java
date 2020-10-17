@@ -73,7 +73,9 @@ public abstract class AbstractXmlApplicationContext extends AbstractRefreshableC
 
 	/**
 	 * Loads the bean definitions via an XmlBeanDefinitionReader.
-	 * 通过XmlBeanDefinitionReader加载所有的bean定义
+	 * 通过XmlBeanDefinitionReader加载所有的bean定义，
+	 * 此方法在AbstractApplicationContext中定义了抽象，由子类实现。
+	 *
 	 * @see org.springframework.beans.factory.xml.XmlBeanDefinitionReader
 	 * @see #initBeanDefinitionReader
 	 * @see #loadBeanDefinitions
@@ -81,12 +83,15 @@ public abstract class AbstractXmlApplicationContext extends AbstractRefreshableC
 	@Override
 	protected void loadBeanDefinitions(DefaultListableBeanFactory beanFactory) throws BeansException, IOException {
 		// Create a new XmlBeanDefinitionReader for the given BeanFactory.
+		// 创建bean定义读取器，通过回调设置到容器中，不同的子类设置不同的读取器（有些是读取xml配置，有的是读取java代码的bean定义）
 		XmlBeanDefinitionReader beanDefinitionReader = new XmlBeanDefinitionReader(beanFactory);
 
 		// Configure the bean definition reader with this context's
 		// resource loading environment.
 		// 加载上下文的环境配置，配置bean定义
 		beanDefinitionReader.setEnvironment(this.getEnvironment());
+		// 设置资源加载器，
+		// 因为本类的最上层父类DefaultResourceLoader也继承了DefaultResourceLoader，所以可以直接传this。
 		beanDefinitionReader.setResourceLoader(this);
 		beanDefinitionReader.setEntityResolver(new ResourceEntityResolver(this));
 
@@ -94,6 +99,7 @@ public abstract class AbstractXmlApplicationContext extends AbstractRefreshableC
 		// then proceed with actually loading the bean definitions.
 		// 允许子类提供自定义的初始化读取器reader，然后处理加载bean定义
 		initBeanDefinitionReader(beanDefinitionReader);
+		// 加载bean定义
 		loadBeanDefinitions(beanDefinitionReader);
 	}
 
@@ -122,12 +128,19 @@ public abstract class AbstractXmlApplicationContext extends AbstractRefreshableC
 	 * @see #getResourcePatternResolver
 	 */
 	protected void loadBeanDefinitions(XmlBeanDefinitionReader reader) throws BeansException, IOException {
+		// 获取到工厂开始加载之前就设置的配置文件路径，
+		// ApplicationContext applicationContext = new ClassPathXmlApplicationContext("spring-env-test.xml");
+		// 由子类实现bean定义资源，子类实现getConfigResources()方法，比如ClassPathXmlApplicationContext的构造方法里就重写了setConfigLocations()
 		Resource[] configResources = getConfigResources();
 		if (configResources != null) {
 			reader.loadBeanDefinitions(configResources);
 		}
+		// 子类实现bean定义资源路径，子类实现getConfigLocations()方法
+		// 如果资源定位configResources为空，则获取子类的路径资源，
+		// 比如，子类FileSystemXmlApplicationContext构造方法中实现了getConfigLocations()方法，指定的文件路径。
 		String[] configLocations = getConfigLocations();
 		if (configLocations != null) {
+			// 调用AbstractBeanDefinitionReader.loadBeanDefinitions()方法
 			reader.loadBeanDefinitions(configLocations);
 		}
 	}

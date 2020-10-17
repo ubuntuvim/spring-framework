@@ -243,6 +243,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 	 * Return the ResourceLoader that this pattern resolver works with.
 	 */
 	public ResourceLoader getResourceLoader() {
+		// 构造函数中初始化了this。resourceLoader = DefaultResourceLoader
 		return this.resourceLoader;
 	}
 

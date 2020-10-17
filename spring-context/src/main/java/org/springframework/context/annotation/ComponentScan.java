@@ -132,6 +132,14 @@ public @interface ComponentScan {
 	 * <p>Note that these filters will be applied in addition to the default filters, if specified.
 	 * Any type under the specified base packages which matches a given filter will be included,
 	 * even if it does not match the default filters (i.e. is not annotated with {@code @Component}).
+	 * 使用方式：
+	 * includeFilters = {
+	 * 		// 指定包含某个类
+	 * 		@Filter(type = FilterType.ASSIGNABLE_TYPE, value = MyServiceImpl.class)
+	 * 		// 指定使用了@Controller注解的类
+	 * 		@Filter(type = FilterType.ANNOTATION, value = Controller.class)
+	 * }
+	 *
 	 * @see #resourcePattern()
 	 * @see #useDefaultFilters()
 	 */
@@ -139,6 +147,14 @@ public @interface ComponentScan {
 
 	/**
 	 * Specifies which types are not eligible for component scanning.
+	 * 使用方式：
+	 * excludeFilters = {
+	 * 		// 排除指定包含某个类不加载到容器中
+	 * 		@Filter(type = FilterType.ASSIGNABLE_TYPE, value = MyServiceImpl.class)
+	 * 		// 排除指定使用了@Controller注解的类加载到容器中
+	 * 		@Filter(type = FilterType.ANNOTATION, value = Controller.class)
+	 * }
+	 *
 	 * @see #resourcePattern
 	 */
 	Filter[] excludeFilters() default {};

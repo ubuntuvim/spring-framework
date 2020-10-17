@@ -135,7 +135,8 @@ public class FileSystemXmlApplicationContext extends AbstractXmlApplicationConte
 	public FileSystemXmlApplicationContext(
 			String[] configLocations, boolean refresh, @Nullable ApplicationContext parent)
 			throws BeansException {
-
+		// 通过类层级，一直通过super()方法一层层往上找父类的父类的父类。。。。
+		// 最终找到AbstractApplicationContext的构造方法，
 		super(parent);
 		setConfigLocations(configLocations);
 		if (refresh) {
@@ -145,6 +146,8 @@ public class FileSystemXmlApplicationContext extends AbstractXmlApplicationConte
 
 
 	/**
+	 * 重写了DefaultResourceLoader中的方法，加载bean定义的时候会回调到此。
+	 *
 	 * Resolve resource paths as file system paths.
 	 * <p>Note: Even if a given path starts with a slash, it will get
 	 * interpreted as relative to the current VM working directory.

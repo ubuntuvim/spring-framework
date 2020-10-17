@@ -111,6 +111,8 @@ public abstract class BeanUtils {
 	}
 
 	/**
+	 * 必须保证初始化类必须有public默认无参数构造器，注意初始化内部类时，内部类必须是静态的，否则报错！
+	 *
 	 * Instantiate a class using its 'primary' constructor (for Kotlin classes,
 	 * potentially having default arguments declared) or its default constructor
 	 * (for regular Java classes, expecting a standard no-arg setup).

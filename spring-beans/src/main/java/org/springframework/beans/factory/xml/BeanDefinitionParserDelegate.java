@@ -408,19 +408,28 @@ public class BeanDefinitionParserDelegate {
 	/**
 	 * Parses the supplied {@code <bean>} element. May return {@code null}
 	 * if there were errors during parse. Errors are reported to the
+	 * 解析<bean>标签，并转换成BeanDefinition返回
 	 * {@link org.springframework.beans.factory.parsing.ProblemReporter}.
 	 */
 	@Nullable
 	public BeanDefinitionHolder parseBeanDefinitionElement(Element ele, @Nullable BeanDefinition containingBean) {
+		// 拿到<bean>定义的id属性值
 		String id = ele.getAttribute(ID_ATTRIBUTE);
+		// 拿到<bean>定义的name属性值
 		String nameAttr = ele.getAttribute(NAME_ATTRIBUTE);
 
 		List<String> aliases = new ArrayList<>();
+		// 如果name属性定义别名，比如<bean name="beanA, beanB, beanC" class="com.ubuntuvim.service.impl.UserServiceImpl/>
+		// 直接把一个class定义成三个bean名，等价于如下三个定义：
+		//  <bean name="beanA" class="com.ubuntuvim.service.impl.UserServiceImpl/>
+		//  <bean name="beanB" class="com.ubuntuvim.service.impl.UserServiceImpl/>
+		//  <bean name="beanC" class="com.ubuntuvim.service.impl.UserServiceImpl/>
 		if (StringUtils.hasLength(nameAttr)) {
 			String[] nameArr = StringUtils.tokenizeToStringArray(nameAttr, MULTI_VALUE_ATTRIBUTE_DELIMITERS);
 			aliases.addAll(Arrays.asList(nameArr));
 		}
 
+		// beanName默认使用id属性的值，如果id属性为空，则获取name属性，如果name属性有多个值直接用第一个值作为beanName
 		String beanName = id;
 		if (!StringUtils.hasText(beanName) && !aliases.isEmpty()) {
 			beanName = aliases.remove(0);
@@ -431,9 +440,11 @@ public class BeanDefinitionParserDelegate {
 		}
 
 		if (containingBean == null) {
+			// 校验<beans>标签下是否有重复的<bean>定义
 			checkNameUniqueness(beanName, aliases, ele);
 		}
 
+		// 进一步解析bean标签下所有子标签属性并统一封装至GenericBeanDefinition类型实例中
 		AbstractBeanDefinition beanDefinition = parseBeanDefinitionElement(ele, beanName, containingBean);
 		if (beanDefinition != null) {
 			if (!StringUtils.hasText(beanName)) {
@@ -465,6 +476,7 @@ public class BeanDefinitionParserDelegate {
 				}
 			}
 			String[] aliasesArray = StringUtils.toStringArray(aliases);
+			// 所有属性解析、校验完成后封装成BeanDefinitionHolder实例并返回
 			return new BeanDefinitionHolder(beanDefinition, beanName, aliasesArray);
 		}
 
@@ -500,29 +512,38 @@ public class BeanDefinitionParserDelegate {
 	public AbstractBeanDefinition parseBeanDefinitionElement(
 			Element ele, String beanName, @Nullable BeanDefinition containingBean) {
 
+		// 标记当前<bean>标签正在解析，
 		this.parseState.push(new BeanEntry(beanName));
 
+		// 解析class属性值
 		String className = null;
 		if (ele.hasAttribute(CLASS_ATTRIBUTE)) {
 			className = ele.getAttribute(CLASS_ATTRIBUTE).trim();
 		}
+		// 解析parent属性值
 		String parent = null;
 		if (ele.hasAttribute(PARENT_ATTRIBUTE)) {
 			parent = ele.getAttribute(PARENT_ATTRIBUTE);
 		}
 
 		try {
+			// 创建用于承载属性的AbstractBeanDefinition类型的GenericBeanDefinition
 			AbstractBeanDefinition bd = createBeanDefinition(className, parent);
 
+			// 解析<bean>标签的扩展属性，比如singleton/scope/abstract/lazy-init/autowire等属性
 			parseBeanDefinitionAttributes(ele, beanName, containingBean, bd);
+			// 解析描述信息
 			bd.setDescription(DomUtils.getChildElementValueByTagName(ele, DESCRIPTION_ELEMENT));
 
 			parseMetaElements(ele, bd);
 			parseLookupOverrideSubElements(ele, bd.getMethodOverrides());
 			parseReplacedMethodSubElements(ele, bd.getMethodOverrides());
 
+			// 解析<constructor-arg>子元素
 			parseConstructorArgElements(ele, bd);
+			// 解析<property>子元素
 			parsePropertyElements(ele, bd);
+			// 解析<qualifier>子元素
 			parseQualifierElements(ele, bd);
 
 			bd.setResource(this.readerContext.getResource());
@@ -540,9 +561,10 @@ public class BeanDefinitionParserDelegate {
 			error("Unexpected failure during bean definition parsing", ele, ex);
 		}
 		finally {
+			// 解析完成，从标记池中取掉
 			this.parseState.pop();
 		}
-
+		// 解析出错反回null
 		return null;
 	}
 

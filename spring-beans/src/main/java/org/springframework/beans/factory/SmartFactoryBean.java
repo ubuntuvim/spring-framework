@@ -32,6 +32,8 @@ package org.springframework.beans.factory;
  * In general, application-provided FactoryBeans should simply implement
  * the plain {@link FactoryBean} interface. New methods might be added
  * to this extended interface even in point releases.
+ * 此接口也是一个工厂bean接口，也是用来创建复杂bean的，不同在于，它扩展了FactoryBean接口，添加了懒加载的控制。
+ * 注意：这个接口是专用接口，专门在框架内部和内部的协作框架使用，对于开发者而已，更应该使用FactoryBean接口。
  *
  * @author Juergen Hoeller
  * @since 2.0.3

@@ -1,9 +1,7 @@
 package com.ubuntuvim.spring;
 
-import org.junit.Test;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.context.support.AbstractApplicationContext;
 
 /**
  * 测试环境是否正确配置
@@ -18,13 +16,29 @@ public class EnvTest {
 //		System.out.println("\n\n\n" + System.getenv() + "\n\n\n");
 //		System.out.println("\n\n\n" + System.getProperties() + "\n\n\n");
 
-		ApplicationContext applicationContext = new AnnotationConfigApplicationContext(AppConfig.class);
+		AbstractApplicationContext applicationContext = new AnnotationConfigApplicationContext(AppConfig.class);
+		System.out.println("容器实例：" + applicationContext);
 		ConfigBean configBean = applicationContext.getBean(ConfigBean.class);
 		System.out.println(configBean);
 		configBean.start();
 		configBean.stop();
-//		TestBean testBean = (TestBean) applicationContext.getBean("testBean");
-//		System.out.println(testBean);
+
+		TestBean testBean = (TestBean) applicationContext.getBean("testBean");
+		System.out.println(testBean);
+
+		// 获取上下文实例
+		MyApplicationContextAware myApplicationContextAware = (MyApplicationContextAware) applicationContext.getBean("myApplicationContextAware");
+		System.out.println(myApplicationContextAware.getApplicationContext());
+		// 获取到实例对象应该就是前面创建的applicationContext，
+		System.out.println(applicationContext == myApplicationContextAware.getApplicationContext());
+
+		// 事件监听测试，通过publisher发送事件，通过listener接收事件
+		MyApplicationEventPublisherAware myApplicationEventPublisherAware = applicationContext.getBean(MyApplicationEventPublisherAware.class);
+		myApplicationEventPublisherAware.sendMsg();
+
+		// 关闭容器时配置在bean上的销毁方法就会被执行
+		applicationContext.close();
 	}
+
 
 }

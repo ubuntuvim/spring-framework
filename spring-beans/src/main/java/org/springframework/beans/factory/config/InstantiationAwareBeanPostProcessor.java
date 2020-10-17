@@ -16,13 +16,28 @@
 
 package org.springframework.beans.factory.config;
 
-import java.beans.PropertyDescriptor;
-
 import org.springframework.beans.BeansException;
 import org.springframework.beans.PropertyValues;
 import org.springframework.lang.Nullable;
 
+import java.beans.PropertyDescriptor;
+
 /**
+ * https://cloud.tencent.com/developer/article/1409273
+ * 接口的主要作用在于目标对象的实例化过程中需要处理的事情，包括实例化对象的前后过程以及实例的属性设置
+ * 此接口是Spring框架内部使用的非常重要的接口，它是BeanPostProcessor的一个子接口，总共有6个方法。
+ * 1。 postProcessBeforeInitialization()方法，继承至父类BeanPostProcessor接口中的方法,在Bean实例化完成且初始化方法之前执行
+ * 2。 postProcessAfterInitialization()方法，继承至父类BeanPostProcessor接口中的方法，在Bean实例化完成且初始化方法执行完成之后执行
+ * 3。 postProcessBeforeInstantiation()方法，自身方法，是最先执行的方法，它在目标对象实例化之前调用，该方法的返回值类型是Object，我们可以返回任何类型的值。
+ * 		由于这个时候目标对象还未实例化，所以这个返回值可以用来代替原本该生成的目标对象的实例(比如代理对象)。
+ * 		如果该方法的返回值代替原本该生成的目标对象，后续只有postProcessAfterInitialization()方法会调用，其它方法不再调用；否则按照正常的流程走
+ * 4。 postProcessAfterInstantiation()方法，在目标对象实例化之后调用，这个时候对象已经被实例化，但是该实例的属性还未被设置，都是null。
+ * 		因为它的返回值是决定要不要调用postProcessPropertyValues()方法的其中一个因素（因为还有一个因素是mbd.getDependencyCheck()）；
+ * 		如果该方法返回false,并且不需要check，那么postProcessPropertyValues()方法就会被忽略不执行；如果返回true，postProcessPropertyValues()方法就会被执行
+ * 5。 postProcessPropertyValues()方法（已经声明为过时，5.1版本之后推荐使用postProcessPropertyValues()方法），
+ * 		自身方法，对属性值进行修改；如果postProcessAfterInstantiation()方法返回false，该方法不会被调用。可以在该方法内对属性值进行修改
+ * 6。 postProcessProperties()方法，此方法和postProcessPropertyValues()方法是同样的作用。5.1版本之后推荐使用的方法。
+ *
  * Subinterface of {@link BeanPostProcessor} that adds a before-instantiation callback,
  * and a callback after instantiation but before explicit properties are set or
  * autowiring occurs.
@@ -61,6 +76,11 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 	 * {@link SmartInstantiationAwareBeanPostProcessor} interface in order
 	 * to predict the type of the bean object that they are going to return here.
 	 * <p>The default implementation returns {@code null}.
+	 *
+	 * 它在目标对象实例化之前调用，该方法的返回值类型是Object，我们可以返回任何类型的值。
+	 * 由于这个时候目标对象还未实例化，所以这个返回值可以用来代替原本该生成的目标对象的实例(比如代理对象)。
+	 * 如果该方法的返回值代替原本该生成的目标对象，后续只有postProcessAfterInitialization方法会调用，其它方法不再调用；否则按照正常的流程走
+	 *
 	 * @param beanClass the class of the bean to be instantiated
 	 * @param beanName the name of the bean
 	 * @return the bean object to expose instead of a default instance of the target bean,
@@ -81,6 +101,11 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 	 * <p>This is the ideal callback for performing custom field injection on the given bean
 	 * instance, right before Spring's autowiring kicks in.
 	 * <p>The default implementation returns {@code true}.
+	 *
+	 * 在目标对象实例化之后调用，这个时候对象已经被实例化，但是该实例的属性还未被设置，都是null。
+	 * 因为它的返回值是决定要不要调用postProcessPropertyValues方法的其中一个因素（因为还有一个因素是mbd.getDependencyCheck()）；
+	 * 如果该方法返回false,并且不需要check，那么postProcessPropertyValues就会被忽略不执行；如果返回true，postProcessPropertyValues就会被执行
+	 *
 	 * @param bean the bean instance created, with properties not having been set yet
 	 * @param beanName the name of the bean
 	 * @return {@code true} if properties should be set on the bean; {@code false}
@@ -127,6 +152,9 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 	 * creating a new MutablePropertyValues instance based on the original PropertyValues,
 	 * adding or removing specific values.
 	 * <p>The default implementation returns the given {@code pvs} as-is.
+	 *
+	 * 对属性值进行修改；如果postProcessAfterInstantiation方法返回false，该方法不会被调用。
+	 *
 	 * @param pvs the property values that the factory is about to apply (never {@code null})
 	 * @param pds the relevant property descriptors for the target bean (with ignored
 	 * dependency types - which the factory handles specifically - already filtered out)

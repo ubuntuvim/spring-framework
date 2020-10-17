@@ -144,16 +144,20 @@ public class DefaultResourceLoader implements ResourceLoader {
 	public Resource getResource(String location) {
 		Assert.notNull(location, "Location must not be null");
 
+		// 协议类的路径
 		for (ProtocolResolver protocolResolver : getProtocolResolvers()) {
 			Resource resource = protocolResolver.resolve(location, this);
 			if (resource != null) {
 				return resource;
 			}
 		}
-
+		// 文件系统方式
 		if (location.startsWith("/")) {
+			// getResourceByPath也被子类FileSystemXmlApplicationContext重写了，
+			// 如果是使用FileSystemXmlApplicationContext来初始化容器，则会回调子类重写的方法。返回FileSystemResource对象
 			return getResourceByPath(location);
 		}
+		// 类路径方式：classpath:*/application.xml
 		else if (location.startsWith(CLASSPATH_URL_PREFIX)) {
 			return new ClassPathResource(location.substring(CLASSPATH_URL_PREFIX.length()), getClassLoader());
 		}

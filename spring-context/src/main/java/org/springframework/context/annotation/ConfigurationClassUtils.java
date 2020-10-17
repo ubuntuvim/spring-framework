@@ -54,6 +54,12 @@ abstract class ConfigurationClassUtils {
 
 	public static final String CONFIGURATION_CLASS_LITE = "lite";
 
+	/**
+	 * Conventions.getQualifiedAttributeName用于获取属性的全限定名，
+	 * 比如：
+	 * 这里拿到的是：org.springframework.context.annotation.ConfigurationClassPostProcessor.configurationClass
+	 * 其实就是一个字符串拼接！this.getClass().getName() + attributeName;
+	 */
 	public static final String CONFIGURATION_CLASS_ATTRIBUTE =
 			Conventions.getQualifiedAttributeName(ConfigurationClassPostProcessor.class, "configurationClass");
 
@@ -128,6 +134,7 @@ abstract class ConfigurationClassUtils {
 			beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_FULL);
 		}
 		else if (config != null || isConfigurationCandidate(metadata)) {
+			// 设置bean定义的属性org.springframework.context.annotation.ConfigurationClassPostProcessor.configurationClass值为lite
 			beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_LITE);
 		}
 		else {
@@ -135,8 +142,10 @@ abstract class ConfigurationClassUtils {
 		}
 
 		// It's a full or lite configuration candidate... Let's determine the order value, if any.
+		// 如果是一个候选配置类，判断一下是否有设置顺序（实现Order接口），如果是则设置一个属性值为接口返回的顺序值
 		Integer order = getOrder(metadata);
 		if (order != null) {
+			// 设置bean定义的属性org.springframework.context.annotation.ConfigurationClassPostProcessor.order置为接口中设置的顺序值
 			beanDef.setAttribute(ORDER_ATTRIBUTE, order);
 		}
 

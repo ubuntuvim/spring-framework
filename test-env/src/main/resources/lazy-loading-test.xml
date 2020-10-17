@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xmlns:context="http://www.springframework.org/schema/context"
+	   xsi:schemaLocation="http://www.springframework.org/schema/beans
+	   http://www.springframework.org/schema/beans/spring-beans.xsd
+	   http://www.springframework.org/schema/context
+	   http://www.springframework.org/schema/context/spring-context.xsd ">
+
+	<context:component-scan base-package="com.ubuntuvim.spring.lazyloading" />
+
+
+	<bean name="myInitializingBeanSubClassNotUseLazy" class="com.ubuntuvim.spring.lazyloading.MyInitializingBeanNoLazy">
+		<property name="name" value="未使用lazy-init=false" />
+	</bean>
+
+	<!-- 使用了lazy-init可以做到懒加载类本身懒加载，就相当于在com.ubuntuvim.spring.lazyloading.MyInitializingBeanNoLazy上使用@Lazy注解 -->
+	<bean name="myInitializingBeanSubClassUseLazy" class="com.ubuntuvim.spring.lazyloading.MyInitializingBeanNoLazy" lazy-init="true">
+		<property name="name" value="使用了Lazy-init=true" />
+	</bean>
+
+	<!--
+	 使用了lazy-init可以做到懒加载类本身懒加载，就相当于在com.ubuntuvim.spring.lazyloading.MyInitializingBeanNoLazy上使用@Lazy注解
+	 但是如果有另外一个类引用了myInitializingBeanSubClassUseLazyByOtherRef，那么即使引用的类设置了懒加载，myInitializingBeanSubClassUseLazyByOtherRef也会被加载
+	 因为引用类在初始化设置属性的时候会先初始化依赖的属性。
+	 有一种方式可以做到懒加载，就是在引用的属性上同时使用@Lazy注解。
+	 @Resource
+	 @Lazy
+	 MyInitializingBeanNoLazy myInitializingBeanSubClassUseLazyByOtherRef;
+	 -->
+	<bean name="myInitializingBeanSubClassUseLazyByOtherRef" class="com.ubuntuvim.spring.lazyloading.MyInitializingBeanNoLazy" lazy-init="true">
+		<property name="name" value="使用了Lazy-init=true，但是被另外的类引用了。也会被加载。如果在引用的属性上使用了@Lazy注解，那么也可以实现懒加载！" />
+	</bean>
+
+	<!--
+	在没有使用过bean之前，通过FactoryBean.getObject创建的bean不会直接在容器启动的时候实例化。比如InitBeanFromGetObject2不会在容器启动的时候实例化。
+	-->
+	<bean name="myInitializingBeanNoLazyAndBeanFactoryImplByOtherRef" class="com.ubuntuvim.spring.lazyloading.MyInitializingBeanNoLazyAndBeanFactoryImpl"
+		  lazy-init="true">
+		<property name="name" value="我是一个同时实现了Bean初始化方法和FactoryBean方法的类，我即使被定义为lazy-init=true也会在启动时被实例化。
+		因为FactoryBean实现类必须先被实例化才能调用getObject方法向容器注册bean" />
+	</bean>
+</beans>
