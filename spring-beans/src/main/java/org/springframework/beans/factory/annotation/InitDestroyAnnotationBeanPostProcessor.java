@@ -150,6 +150,13 @@ public class InitDestroyAnnotationBeanPostProcessor
 		metadata.checkConfigMembers(beanDefinition);
 	}
 
+	/**
+	 * 执行@PostConstruct注解声明的方法，用于自定义初始化内容。
+	 * @param bean the new bean instance
+	 * @param beanName the name of the bean
+	 * @return
+	 * @throws BeansException
+	 */
 	@Override
 	public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
 		LifecycleMetadata metadata = findLifecycleMetadata(bean.getClass());
@@ -174,6 +181,8 @@ public class InitDestroyAnnotationBeanPostProcessor
 	public void postProcessBeforeDestruction(Object bean, String beanName) throws BeansException {
 		LifecycleMetadata metadata = findLifecycleMetadata(bean.getClass());
 		try {
+			// 执行@PreDestroy注解的销毁回调方法，如果一个类中多个方法都是用了这个注解，会遍历执行所有的注解方法
+			// 和初始化方法不一样，销毁方法可以执行多个，初始化的@PostConstruct只会执行一个
 			metadata.invokeDestroyMethods(bean, beanName);
 		}
 		catch (InvocationTargetException ex) {

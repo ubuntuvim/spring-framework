@@ -16,41 +16,14 @@
 
 package org.springframework.beans.factory.annotation;
 
-import java.beans.PropertyDescriptor;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.AccessibleObject;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
-import org.springframework.beans.BeanUtils;
-import org.springframework.beans.BeansException;
-import org.springframework.beans.PropertyValues;
-import org.springframework.beans.TypeConverter;
-import org.springframework.beans.factory.BeanCreationException;
-import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.BeanFactoryAware;
-import org.springframework.beans.factory.BeanFactoryUtils;
-import org.springframework.beans.factory.InjectionPoint;
-import org.springframework.beans.factory.NoSuchBeanDefinitionException;
-import org.springframework.beans.factory.UnsatisfiedDependencyException;
+import org.springframework.beans.*;
+import org.springframework.beans.factory.*;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.config.DependencyDescriptor;
 import org.springframework.beans.factory.config.InstantiationAwareBeanPostProcessorAdapter;
+import org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory;
 import org.springframework.beans.factory.support.LookupOverride;
 import org.springframework.beans.factory.support.MergedBeanDefinitionPostProcessor;
 import org.springframework.beans.factory.support.RootBeanDefinition;
@@ -67,6 +40,12 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
+
+import java.beans.PropertyDescriptor;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.*;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * {@link org.springframework.beans.factory.config.BeanPostProcessor BeanPostProcessor}
@@ -392,10 +371,24 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 		return (candidateConstructors.length > 0 ? candidateConstructors : null);
 	}
 
+	/**
+	 * 调用位置:
+	 * @see AbstractAutowireCapableBeanFactory#populateBean(String, RootBeanDefinition, BeanWrapper)
+	 * 调用时机：bean已经实例化，但是还没正在进行属性填充。此方法就是通过反射填充bean依赖属性值的
+	 * @param pvs 属性值
+	 * @param bean 被填充属性的bean实例
+	 * @param beanName
+	 * @return
+	 */
 	@Override
 	public PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName) {
+		// 扫描查找到bean实例里面使用@Autowired的属性或者方法，
 		InjectionMetadata metadata = findAutowiringMetadata(beanName, bean.getClass(), pvs);
 		try {
+			/**
+			 * 通过反射完成属性注入：field.set(target, value)
+			 * @see org.springframework.beans.factory.annotation.InjectionMetadata#inject
+			 */
 			metadata.inject(bean, beanName, pvs);
 		}
 		catch (BeanCreationException ex) {
@@ -438,7 +431,13 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 		}
 	}
 
-
+	/**
+	 * 把bean实例依赖的、被@Autowired或@Value声明的属性找出来并放在缓存injectionMetadataCache中
+	 * @param beanName
+	 * @param clazz 被扫描的bean实例
+	 * @param pvs
+	 * @return
+	 */
 	private InjectionMetadata findAutowiringMetadata(String beanName, Class<?> clazz, @Nullable PropertyValues pvs) {
 		// Fall back to class name as cache key, for backwards compatibility with custom callers.
 		String cacheKey = (StringUtils.hasLength(beanName) ? beanName : clazz.getName());
@@ -469,7 +468,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 
 		do {
 			final List<InjectionMetadata.InjectedElement> currElements = new ArrayList<>();
-
+			// 扫描查找使用了@Autowired注解的属性
 			ReflectionUtils.doWithLocalFields(targetClass, field -> {
 				MergedAnnotation<?> ann = findAutowiredAnnotation(field);
 				if (ann != null) {
@@ -483,7 +482,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 					currElements.add(new AutowiredFieldElement(field, required));
 				}
 			});
-
+			// 扫描查找使用了@Autowired注解的方法，通常是setXxx()方法
 			ReflectionUtils.doWithLocalMethods(targetClass, method -> {
 				Method bridgedMethod = BridgeMethodResolver.findBridgedMethod(method);
 				if (!BridgeMethodResolver.isVisibilityBridgeMethodPair(method, bridgedMethod)) {
@@ -513,7 +512,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 			targetClass = targetClass.getSuperclass();
 		}
 		while (targetClass != null && targetClass != Object.class);
-
+		// 把扫描到属性和方法包装成InjectionMetadata返回
 		return InjectionMetadata.forElements(elements, clazz);
 	}
 

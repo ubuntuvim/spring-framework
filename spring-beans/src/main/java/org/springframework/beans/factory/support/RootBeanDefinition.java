@@ -50,9 +50,11 @@ import java.util.function.Supplier;
 @SuppressWarnings("serial")
 public class RootBeanDefinition extends AbstractBeanDefinition {
 
+	// 存储有Bean的名称、别名、BeanDefinition
 	@Nullable
 	private BeanDefinitionHolder decoratedDefinition;
 
+	// jdk反射包的接口，通过它可以查看bean注释信息
 	@Nullable
 	private AnnotatedElement qualifiedElement;
 
@@ -63,9 +65,11 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 
 	boolean isFactoryMethodUnique = false;
 
+	// 目标类型
 	@Nullable
 	volatile ResolvableType targetType;
 
+	// 缓存class，表明RootBeanDefinition存储那些类的信息
 	/** Package-visible field for caching the determined Class of a given bean definition. */
 	@Nullable
 	volatile Class<?> resolvedTargetType;
@@ -90,6 +94,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	Executable resolvedConstructorOrFactoryMethod;
 
 	/** Package-visible field that marks the constructor arguments as resolved. */
+	// 标记构造器的参数是否已经解析完毕。
 	boolean constructorArgumentsResolved = false;
 
 	/** Package-visible field for caching fully resolved constructor arguments. */
@@ -323,6 +328,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	/**
 	 * Return the target type of this bean definition, if known
 	 * (either specified in advance or resolved on first instantiation).
+	 * 返回给定bean定义的目标类型（比如bean是一个UserService接口实现类，那
 	 * @since 3.2.2
 	 */
 	@Nullable

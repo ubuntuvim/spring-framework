@@ -16,30 +16,22 @@
 
 package org.springframework.beans.factory.support;
 
-import java.io.Serializable;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.security.AccessControlContext;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.annotation.InitDestroyAnnotationBeanPostProcessor;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.beans.factory.config.DestructionAwareBeanPostProcessor;
 import org.springframework.lang.Nullable;
-import org.springframework.util.Assert;
-import org.springframework.util.ClassUtils;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.ReflectionUtils;
-import org.springframework.util.StringUtils;
+import org.springframework.util.*;
+
+import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.security.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Adapter that implements the {@link DisposableBean} and {@link Runnable}
@@ -104,10 +96,17 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 		Assert.notNull(bean, "Disposable bean must not be null");
 		this.bean = bean;
 		this.beanName = beanName;
+		/**
+		 * isExternallyManagedDestroyMethod()方法用于放置销毁方法重复调用。
+		 * 容器在读取bean定义时会把一个类中使用@PreDestory注解的方法都初始化到externallyManagedDestroyMethods中。
+		 * 如果开发者在实现的DisposableBean接口的destory()方法上也使用了@PreDestory注解，那么只会在执行注解回调方法的时候执行，
+		 * 执行DisposableBean接口回调时不会再次执行。
+		 */
 		this.invokeDisposableBean =
 				(this.bean instanceof DisposableBean && !beanDefinition.isExternallyManagedDestroyMethod("destroy"));
 		this.nonPublicAccessAllowed = beanDefinition.isNonPublicAccessAllowed();
 		this.acc = acc;
+		// 获取自定义的方法，比如@Bean(destroyMethod = "beanDestoryCallbackMethod")中定义的beanDestoryCallbackMethod()方法
 		String destroyMethodName = inferDestroyMethodIfNecessary(bean, beanDefinition);
 		if (destroyMethodName != null && !(this.invokeDisposableBean && "destroy".equals(destroyMethodName)) &&
 				!beanDefinition.isExternallyManagedDestroyMethod(destroyMethodName)) {
@@ -184,11 +183,15 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 	 */
 	@Nullable
 	private String inferDestroyMethodIfNecessary(Object bean, RootBeanDefinition beanDefinition) {
+		// 获取自定义的方法，比如@Bean(destroyMethod = "beanDestoryCallbackMethod")中定义的beanDestoryCallbackMethod()方法
 		String destroyMethodName = beanDefinition.getDestroyMethodName();
+		// 方法名是(inferred) 或者 未定义销毁方法但是实现了AutoCloseable接口
 		if (AbstractBeanDefinition.INFER_METHOD.equals(destroyMethodName) ||
 				(destroyMethodName == null && bean instanceof AutoCloseable)) {
 			// Only perform destroy method inference or Closeable detection
 			// in case of the bean not explicitly implementing DisposableBean
+			// 如bean未实现DisposableBean接口，并且也没有自定义销毁回调方法。
+			// 才会执行默认的close()方法，比如SimpleDestoryBean类演示的场景
 			if (!(bean instanceof DisposableBean)) {
 				try {
 					return bean.getClass().getMethod(CLOSE_METHOD_NAME).getName();
@@ -239,6 +242,11 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 	public void destroy() {
 		if (!CollectionUtils.isEmpty(this.beanPostProcessors)) {
 			for (DestructionAwareBeanPostProcessor processor : this.beanPostProcessors) {
+				/**
+				 * 执行后置处理器的销毁回调方法
+				 * @PreDestroy注释的方法就是在这里执行的。默认实现有
+				 * @see InitDestroyAnnotationBeanPostProcessor#postProcessBeforeDestruction(Object, String)
+				 */
 				processor.postProcessBeforeDestruction(this.bean, this.beanName);
 			}
 		}
@@ -247,6 +255,7 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 			if (logger.isTraceEnabled()) {
 				logger.trace("Invoking destroy() on bean with name '" + this.beanName + "'");
 			}
+			// 执行DisposableBean接口的destory()方法。
 			try {
 				if (System.getSecurityManager() != null) {
 					AccessController.doPrivileged((PrivilegedExceptionAction<Object>) () -> {
@@ -268,7 +277,8 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 				}
 			}
 		}
-
+		// 执行自定义的销毁方法，比如下面自定义的销毁方法就是beanDestoryCallbackMethod()
+		// @Bean(destroyMethod = "beanDestoryCallbackMethod")
 		if (this.destroyMethod != null) {
 			invokeCustomDestroyMethod(this.destroyMethod);
 		}

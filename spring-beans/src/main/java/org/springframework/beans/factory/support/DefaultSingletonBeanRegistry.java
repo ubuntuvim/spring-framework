@@ -595,6 +595,10 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		// Actually destroy the bean now...
 		if (bean != null) {
 			try {
+				/**
+				 * 执行
+				 * @see DisposableBeanAdapter#destroy()
+				 */
 				bean.destroy();
 			}
 			catch (Throwable ex) {

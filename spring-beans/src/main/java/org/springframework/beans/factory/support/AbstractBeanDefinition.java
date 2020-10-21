@@ -16,14 +16,6 @@
 
 package org.springframework.beans.factory.support;
 
-import java.lang.reflect.Constructor;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Supplier;
-
 import org.springframework.beans.BeanMetadataAttributeAccessor;
 import org.springframework.beans.MutablePropertyValues;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
@@ -37,6 +29,10 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
+
+import java.lang.reflect.Constructor;
+import java.util.*;
+import java.util.function.Supplier;
 
 /**
  * Base class for concrete, full-fledged {@link BeanDefinition} classes,
@@ -106,6 +102,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 
 	/**
 	 * Constant that indicates no dependency check at all.
+	 * 没有依赖检查的常量标识
 	 * @see #setDependencyCheck
 	 */
 	public static final int DEPENDENCY_CHECK_NONE = 0;

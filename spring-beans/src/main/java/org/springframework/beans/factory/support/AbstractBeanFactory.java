@@ -216,7 +216,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					logger.trace("Returning cached instance of singleton bean '" + beanName + "'");
 				}
 			}
-			// 获取bean实例对象，如果是工厂bean则设置bean的属性isFactoryBean为true
+			/**
+			 * 获取bean实例对象，如果是工厂bean则设置bean的属性isFactoryBean为true
+			 */
 			bean = getObjectForBeanInstance(sharedInstance, name, beanName, null);
 		}
 		// 缓存中还没有beanName对应的实例
@@ -298,7 +300,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 						try {
 							/**
 							 * 创建单例对象，createBean方法由子类实现，
-							 * @see AbstractAutowireCapableBeanFactory#createBean (String beanName, RootBeanDefinition mbd, @Nullable Object[] args)
+							 * @see AbstractAutowireCapableBeanFactory#createBean(String, RootBeanDefinition, Object[]) 
  							 */
 							return createBean(beanName, mbd, args);
 						}
@@ -310,13 +312,13 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 							throw ex;
 						}
 					});
-					// 在createBean方法中创建好的单例对象已经设置到缓存中，这里是再从缓存中拿
-					// 另外还有一个非常重要的功能是如果经过前面createBean方法还是没创建成功那么就会通过开发者实现的FactoryBean接口创建对象
+					// 如果经过前面createBean方法还是没创建成功那么就会通过开发者实现的FactoryBean接口创建对象
 					// 也就是说FactoryBean.getObject()方法是在这里被执行的。
+					// 通过FactoryBean创建的实例不会执行初始化回调。不会执行XxxAware接口
 					bean = getObjectForBeanInstance(sharedInstance, name, beanName, mbd);
 				}
-
-				else if (mbd.isPrototype()) {  // prototype类型实例
+				// prototype类型实例
+				else if (mbd.isPrototype()) {
 					// It's a prototype -> create a new instance.
 					// 如果是prototype类型的bean，每次都新建一个实例
 					Object prototypeInstance = null;
@@ -329,8 +331,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					}
 					bean = getObjectForBeanInstance(prototypeInstance, name, beanName, mbd);
 				}
-
-				else {  // 非单例类型，非prototype类型，通常是一些web相关，比如request、session类型
+				// 非单例类型，非prototype类型，通常是一些web相关，比如request、session类型
+				else {
 					String scopeName = mbd.getScope();
 					final Scope scope = this.scopes.get(scopeName);
 					if (scope == null) {
@@ -1842,6 +1844,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * Determine whether the given bean requires destruction on shutdown.
 	 * <p>The default implementation checks the DisposableBean interface as well as
 	 * a specified destroy method and registered DestructionAwareBeanPostProcessors.
+	 * 监测给定的bean是否实现了DisposableBean接口
+	 * 或者是否存在自定义的销毁方法（使用@PreDestroy注解）
+	 * 或者是否使用了后置处理器DestructionAwareBeanPostProcessor
 	 * @param bean the bean instance to check
 	 * @param mbd the corresponding bean definition
 	 * @see org.springframework.beans.factory.DisposableBean
@@ -1850,7 +1855,10 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 */
 	protected boolean requiresDestruction(Object bean, RootBeanDefinition mbd) {
 		return (bean.getClass() != NullBean.class &&
-				(DisposableBeanAdapter.hasDestroyMethod(bean, mbd) || (hasDestructionAwareBeanPostProcessors() &&
+				// bean内的有方法使用了@PreDestroy注解
+				(DisposableBeanAdapter.hasDestroyMethod(bean, mbd)
+						// 容器内注册了DestructtionAwareBeanPostProcessor
+						|| (hasDestructionAwareBeanPostProcessors() &&
 						DisposableBeanAdapter.hasApplicableProcessors(bean, getBeanPostProcessors()))));
 	}
 
@@ -1865,17 +1873,31 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * @see RootBeanDefinition#getDependsOn
 	 * @see #registerDisposableBean
 	 * @see #registerDependentBean
+	 * 方法调用处：
+	 * @see AbstractAutowireCapableBeanFactory#doCreateBean(String, RootBeanDefinition, Object[])
 	 */
 	protected void registerDisposableBeanIfNecessary(String beanName, Object bean, RootBeanDefinition mbd) {
 		AccessControlContext acc = (System.getSecurityManager() != null ? getAccessControlContext() : null);
+		// 非原型bean && （bean实例内使用里@PreDestory注解 || bean实现了DisposableBean接口
+		// 				|| 容器中注册了DestructionAwareBeanPostProcessor后置处理器）
 		if (!mbd.isPrototype() && requiresDestruction(bean, mbd)) {
+			// 单例bean
 			if (mbd.isSingleton()) {
 				// Register a DisposableBean implementation that performs all destruction
 				// work for the given bean: DestructionAwareBeanPostProcessors,
 				// DisposableBean interface, custom destroy method.
+				/**
+				 * 把销毁回调方法包装成DisposableBeanAdapter并注册到容器中，待手动调用容器的close()方法的时候执行
+				 * 包括：
+				 * 1. @Bean注解中自定义的销毁回调方法
+				 * 2. @PreDestory注解的回调方法
+				 * 3. 实现DispoableBean接口的detory()回调方法
+				 * 4. 后置处理器DestructionAwareBeanPostProcessor的postProcessBeforeDestruction()方法
+				 */
 				registerDisposableBean(beanName,
 						new DisposableBeanAdapter(bean, beanName, mbd, getBeanPostProcessors(), acc));
 			}
+			// 非单例、非原型bean
 			else {
 				// A bean with a custom scope...
 				Scope scope = this.scopes.get(mbd.getScope());

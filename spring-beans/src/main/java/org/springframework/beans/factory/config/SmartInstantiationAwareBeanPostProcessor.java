@@ -16,10 +16,10 @@
 
 package org.springframework.beans.factory.config;
 
-import java.lang.reflect.Constructor;
-
 import org.springframework.beans.BeansException;
 import org.springframework.lang.Nullable;
+
+import java.lang.reflect.Constructor;
 
 /**
  * Extension of the {@link InstantiationAwareBeanPostProcessor} interface,
@@ -39,6 +39,7 @@ public interface SmartInstantiationAwareBeanPostProcessor extends InstantiationA
 
 	/**
 	 * Predict the type of the bean to be eventually returned from this
+	 * 预测bean的类型，返回第一个预测成功的的类型，否则返回空。
 	 * processor's {@link #postProcessBeforeInstantiation} callback.
 	 * <p>The default implementation returns {@code null}.
 	 * @param beanClass the raw class of the bean
@@ -54,6 +55,8 @@ public interface SmartInstantiationAwareBeanPostProcessor extends InstantiationA
 	/**
 	 * Determine the candidate constructors to use for the given bean.
 	 * <p>The default implementation returns {@code null}.
+	 * 选择合适的构造起，比如目标bean对象有多个构造器，可以在此方法中做一些定制化操作，
+	 * 比如：在这里可以指定返回某个构造器。或者重新定义构造器的顺序。
 	 * @param beanClass the raw class of the bean (never {@code null})
 	 * @param beanName the name of the bean
 	 * @return the candidate constructors, or {@code null} if none specified
@@ -81,6 +84,7 @@ public interface SmartInstantiationAwareBeanPostProcessor extends InstantiationA
 	 * for the affected bean has been built for a call to this method already,
 	 * it will be exposes as final bean reference by default).
 	 * <p>The default implementation returns the given {@code bean} as-is.
+	 * 获取提前暴露的bean引用，主要用于解决循环依赖，只有单例bean调用此方法
 	 * @param bean the raw bean instance
 	 * @param beanName the name of the bean
 	 * @return the object to expose as bean reference
