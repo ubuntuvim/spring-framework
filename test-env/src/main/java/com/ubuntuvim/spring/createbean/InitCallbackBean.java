@@ -29,7 +29,7 @@ public class InitCallbackBean implements InitializingBean, SmartInitializingSing
 	 */
 	@PostConstruct
 	public void init() {
-		System.out.println("执行初始化回调@PostConstruct注解定义的方法");
+		System.out.println("执行初始化回调@PostConstruct注解定义的init方法");
 	}
 
 	@PostConstruct
@@ -65,7 +65,7 @@ public class InitCallbackBean implements InitializingBean, SmartInitializingSing
 	 * 总结一句话，InitializingBean.afterPropertiesSet()方法只会执行一次。
 	 * 			@PostConstruct 声明的方法都会执行，不管有几个，执行顺序按照方法名升序执行
 	 */
-//	@PostConstruct
+	@PostConstruct
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		System.out.println("执行初始化回调InitializingBean.afterPropertiesSet()方法");
@@ -78,6 +78,6 @@ public class InitCallbackBean implements InitializingBean, SmartInitializingSing
 
 	@PostConstruct
 	private void beanInit() {
-		System.out.println("执行初始化回调@Bean(initMethod = \"beanInit\")定义的方法");
+		System.out.println("执行初始化回调@Bean(initMethod = \"beanInit\")定义的方法，并且此方法也使用了@PostConstruct注解");
 	}
 }

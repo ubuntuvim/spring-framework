@@ -1893,6 +1893,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				 * 2. @PreDestory注解的回调方法
 				 * 3. 实现DispoableBean接口的detory()回调方法
 				 * 4. 后置处理器DestructionAwareBeanPostProcessor的postProcessBeforeDestruction()方法
+				 * 5. 实现AutoCloseable接口或者Closeable接口的bean（当且仅当此bean没有任何自定义销毁回调，也就是说此bean没有使用前面的2，3，4这三种方式）
 				 */
 				registerDisposableBean(beanName,
 						new DisposableBeanAdapter(bean, beanName, mbd, getBeanPostProcessors(), acc));

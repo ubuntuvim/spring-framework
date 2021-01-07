@@ -107,6 +107,7 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 		this.nonPublicAccessAllowed = beanDefinition.isNonPublicAccessAllowed();
 		this.acc = acc;
 		// 获取自定义的方法，比如@Bean(destroyMethod = "beanDestoryCallbackMethod")中定义的beanDestoryCallbackMethod()方法
+		// 如果bean实现了Closeable接口，也是在这里获取到接口的close()方法，close()方法也是destroy方法。
 		String destroyMethodName = inferDestroyMethodIfNecessary(bean, beanDefinition);
 		if (destroyMethodName != null && !(this.invokeDisposableBean && "destroy".equals(destroyMethodName)) &&
 				!beanDefinition.isExternallyManagedDestroyMethod(destroyMethodName)) {
@@ -277,8 +278,9 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 				}
 			}
 		}
-		// 执行自定义的销毁方法，比如下面自定义的销毁方法就是beanDestoryCallbackMethod()
-		// @Bean(destroyMethod = "beanDestoryCallbackMethod")
+		// 1. 执行自定义的销毁方法，比如下面自定义的销毁方法就是beanDestoryCallbackMethod()
+		// 		@Bean(destroyMethod = "beanDestoryCallbackMethod")
+		// 2. 执行实现Closable接口的close()方法。
 		if (this.destroyMethod != null) {
 			invokeCustomDestroyMethod(this.destroyMethod);
 		}
@@ -346,6 +348,7 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 			}
 			else {
 				ReflectionUtils.makeAccessible(destroyMethod);
+				// 执行实现Closeable接口的bean的销毁回调close()方法
 				destroyMethod.invoke(this.bean, args);
 			}
 		}

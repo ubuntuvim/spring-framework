@@ -83,7 +83,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	@Nullable
 	private Set<Exception> suppressedExceptions;
 
-	/** Flag that indicates whether we're currently within destroySingletons. */
+	/** flag that indicates whether we're currently within destroysingletons. */
 	private boolean singletonsCurrentlyInDestruction = false;
 
 	/** Disposable bean instances: bean name to disposable instance. */
@@ -527,6 +527,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		synchronized (this.disposableBeans) {
 			disposableBeanNames = StringUtils.toStringArray(this.disposableBeans.keySet());
 		}
+		// 遍历所有bean，逐个执行这些bean的销毁方法
 		for (int i = disposableBeanNames.length - 1; i >= 0; i--) {
 			destroySingleton(disposableBeanNames[i]);
 		}
@@ -567,6 +568,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		synchronized (this.disposableBeans) {
 			disposableBean = (DisposableBean) this.disposableBeans.remove(beanName);
 		}
+		// 销毁bean
 		destroyBean(beanName, disposableBean);
 	}
 
@@ -587,6 +589,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 			if (logger.isTraceEnabled()) {
 				logger.trace("Retrieved dependent beans for bean '" + beanName + "': " + dependencies);
 			}
+			// 销毁当期bean依赖的bean
 			for (String dependentBeanName : dependencies) {
 				destroySingleton(dependentBeanName);
 			}
@@ -596,7 +599,8 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		if (bean != null) {
 			try {
 				/**
-				 * 执行
+				 * 最核心的销毁bean逻辑，在这个方法里面会执行自定义的销毁方法，实现DisposableBean接口的方法，
+				 * 以及InitDestroyAnnotationBeanPostProcessor#postProcessBeforeDestruction方法
 				 * @see DisposableBeanAdapter#destroy()
 				 */
 				bean.destroy();

@@ -55,7 +55,7 @@ public interface SmartInstantiationAwareBeanPostProcessor extends InstantiationA
 	/**
 	 * Determine the candidate constructors to use for the given bean.
 	 * <p>The default implementation returns {@code null}.
-	 * 选择合适的构造起，比如目标bean对象有多个构造器，可以在此方法中做一些定制化操作，
+	 * 选择合适的构造器，如目标bean对象有多个构造器，可以在此方法中做一些定制化操作，
 	 * 比如：在这里可以指定返回某个构造器。或者重新定义构造器的顺序。
 	 * @param beanClass the raw class of the bean (never {@code null})
 	 * @param beanName the name of the bean

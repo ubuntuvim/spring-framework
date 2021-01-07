@@ -18,13 +18,13 @@ public class EnvTest {
 
 		AbstractApplicationContext applicationContext = new AnnotationConfigApplicationContext(AppConfig.class);
 		System.out.println("容器实例：" + applicationContext);
-		ConfigBean configBean = applicationContext.getBean(ConfigBean.class);
-		System.out.println(configBean);
-		configBean.start();
-		configBean.stop();
-
-		TestBean testBean = (TestBean) applicationContext.getBean("testBean");
-		System.out.println(testBean);
+//		ConfigBean configBean = applicationContext.getBean(ConfigBean.class);
+//		System.out.println(configBean);
+//		configBean.start();
+//		configBean.stop();
+//
+//		TestBean testBean = (TestBean) applicationContext.getBean("testBean");
+//		System.out.println(testBean);
 
 		// 获取上下文实例
 		MyApplicationContextAware myApplicationContextAware = (MyApplicationContextAware) applicationContext.getBean("myApplicationContextAware");

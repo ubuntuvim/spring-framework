@@ -92,7 +92,9 @@ public class InjectionMetadata {
 		Set<InjectedElement> checkedElements = new LinkedHashSet<>(this.injectedElements.size());
 		for (InjectedElement element : this.injectedElements) {
 			Member member = element.getMember();
+			// 检查属性是否已经注入过，避免重复注入。比如一个属性使用了@Autowired注解和@Resource注解时
 			if (!beanDefinition.isExternallyManagedConfigMember(member)) {
+				// 如果没有注入则设置到缓存中下次可以直接从缓存中
 				beanDefinition.registerExternallyManagedConfigMember(member);
 				checkedElements.add(element);
 				if (logger.isTraceEnabled()) {

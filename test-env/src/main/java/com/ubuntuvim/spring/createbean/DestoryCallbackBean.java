@@ -26,6 +26,7 @@ import java.io.IOException;
  */
 public class DestoryCallbackBean implements DisposableBean, /*Closeable, */AutoCloseable {
 
+	// 实现DisposableBean接口的方法
 	@Override
 	public void destroy() throws Exception {
 		System.out.println("执行销毁回调DisposableBean.destory()方法");
@@ -58,7 +59,8 @@ public class DestoryCallbackBean implements DisposableBean, /*Closeable, */AutoC
 	}
 
 	/**
-	 * 自定义销毁回调未定义并且为实现DispoableBean接口时才会执行此方法
+	 * 实现接口AutoCloseable的方法。
+	 * bean没有实现任何销毁回调，也没有在@Bean中自定义任何销毁方法下，当容器执行close事件时此方法会被执行。
 	 * 比如SimpleDestoryBean类的例子。
 	 * @throws IOException
 	 */

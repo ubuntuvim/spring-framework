@@ -16,11 +16,6 @@
 
 package org.springframework.context.support;
 
-import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
-
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanDefinitionStoreException;
@@ -38,6 +33,11 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
+
+import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 /**
  * Generic ApplicationContext implementation that holds a single internal
@@ -104,6 +104,7 @@ public class GenericApplicationContext extends AbstractApplicationContext implem
 
 
 	/**
+	 * 如果是使用AnnotationConfigApplicationContext启动容器则会调用到此方法。
 	 * 创建GenericApplicationContext实例，并初始化一个BeanFactory实例
 	 * @see #registerBeanDefinition
 	 * @see #refresh
@@ -266,6 +267,8 @@ public class GenericApplicationContext extends AbstractApplicationContext implem
 			throw new IllegalStateException(
 					"GenericApplicationContext does not support multiple refresh attempts: just call 'refresh' once");
 		}
+		// 在构造方法中创建BeanFactory实例对象
+		// this.beanFactory = new DefaultListableBeanFactory();
 		this.beanFactory.setSerializationId(getId());
 	}
 
@@ -290,6 +293,7 @@ public class GenericApplicationContext extends AbstractApplicationContext implem
 	 */
 	@Override
 	public final ConfigurableListableBeanFactory getBeanFactory() {
+		// 在构造方法中初始化beanFactory对象实例
 		return this.beanFactory;
 	}
 

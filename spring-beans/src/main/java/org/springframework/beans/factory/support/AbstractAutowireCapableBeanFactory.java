@@ -1621,6 +1621,11 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			 * 		<property name="name" value="ubuntuvim" />
 			 * 		<property name="address" value="china" />
 			 * </bean>
+			 * 需要注意：如果同一个类的属性即使用了@Autowired注解，同时也使用了xml方式注入同一个属性。
+			 * 那么注解方式注入的值将被xml配置值覆盖。
+			 * 比如案例：
+			 * @see com.ubuntuvim.spring.autowiredorder.Person
+			 * 使用注解注入同时，也在autowried-override.xml中配置了注入，最后结果是属性fruit的值是Banana对象。
 			 */
 			applyPropertyValues(beanName, mbd, bw, pvs);
 		}

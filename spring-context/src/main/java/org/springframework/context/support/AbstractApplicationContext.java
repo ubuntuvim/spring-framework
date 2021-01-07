@@ -533,8 +533,9 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 			// Tell the subclass to refresh the internal bean factory.
 			// 获取beanFactory实例，此方法中会完成如下几种操作：
-			// 1. xml配置解析，并把xml中bean标签的定义信息转换成容器识别的数据结构BeanDefinition对象并保存在容器中
-			// 		就是保存到DefaultListableBeanFactory实例的一个Map成员属性上
+			// 1. 如果使用ClassPathXmlApplicationContext启动容器，在此方法中会xml配置解析，
+			// 并把xml中bean标签的定义信息转换成容器识别的数据结构BeanDefinition对象并保存在容器中
+			// 就是保存到DefaultListableBeanFactory实例的一个Map成员属性上
 			// 2. 配置类解析，比如使用@Configuration注解的配置类，把@Bean定义、@Import定义的bean转换BeanDefinition并保存在容器中
 			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
 
@@ -672,8 +673,17 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * @see #getBeanFactory()
 	 */
 	protected ConfigurableListableBeanFactory obtainFreshBeanFactory() {
-		// 调用子类AbstractRefreshableApplicationContext.refreshBeanFactory()方法
-		// 此方法由子类实现，使用委派设计模式，父类定义了抽象refreshBeanFactory方法，具体实现调用子类的方法。
+		/**
+		 * 这两个方法由子类实现，使用委派设计模式，父类定义了抽象，具体实现调用子类的方法。
+		 * getBeanFactory()由子类实现，不同子类处理逻辑不一样，
+		 * 比如，使用ClassPathXmlApplicationContext启动容器则执行：
+		 * @see AbstractRefreshableApplicationContext#refreshBeanFactory() 方法
+		 * @see AbstractRefreshableApplicationContext#getBeanFactory() 方法
+		 *
+		 * 如果使用的是AnnotationConfigApplicationContext启动容器，则执行：
+		 * @see GenericApplicationContext#refreshBeanFactory() 方法
+		 * @see GenericApplicationContext#getBeanFactory() 方法
+		 */
 		refreshBeanFactory();
 		return getBeanFactory();
 	}
@@ -887,8 +897,12 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 	/**
 	 * Template method which can be overridden to add context-specific refresh work.
-	 * 可重写的模板方法，在当前bean初始化之前调用其他的bean
 	 * Called on initialization of special beans, before instantiation of singletons.
+	 * 可重写的模板方法，在当前bean初始化之前调用其他的bean，留给子类重写用：
+	 * 比如AbstractRefreshableWebApplicationContext、StaticWebApplicationContext
+	 * 和GenericWebApplicationContext这三个子类都重写了这个方法，
+	 * 用于初始化了一些SpringMVC相关的主题资源。
+	 * @see org.springframework.web.context.support.AbstractRefreshableWebApplicationContext#onRefresh()
 	 * <p>This implementation is empty.
 	 * @throws BeansException in case of errors
 	 * @see #refresh()
@@ -898,9 +912,11 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	}
 
 	/**
-	 * 注册事件监听器
+	 * 注册事件监听器。
+	 * Spring根于类型搜索把所有类型为ApplicationListener的类都注入到前面initApplicationEventMulticaster()方法中初始化的事件派发器中。
 	 * Add beans that implement ApplicationListener as listeners.
 	 * Doesn't affect other listeners, which can be added without being beans.
+	 * @see #refresh()
 	 */
 	protected void registerListeners() {
 		// Register statically specified listeners first.
@@ -932,8 +948,8 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * initializing all remaining singleton beans.
 	 * 这个方法是整个IOC的核心
 	 * 该方法会实例化所有剩余的非懒加载单例 bean。
-	 * 除了一些内部的 bean、实现了 BeanFactoryPostProcessor 接口的 bean、实现了 BeanPostProcessor 接口的 bean，
-	 * 其他的非懒加载单例 bean 都会在这个方法中被实例化，并且 BeanPostProcessor 的触发也是在这个方法中（前面的方法已经把所有的BeanPostProcessor注册到容器中)。
+	 * 除了一些内部的 bean、实现了 BeanFactoryPostProcessor接口的bean、实现了 BeanPostProcessor接口的bean，
+	 * 其他的非懒加载单例 bean 都会在这个方法中被实例化，并且BeanPostProcessor的触发也是在这个方法中（前面的方法已经把所有的BeanPostProcessor注册到容器中)。
 	 */
 	protected void finishBeanFactoryInitialization(ConfigurableListableBeanFactory beanFactory) {
 		// Initialize conversion service for this context.
@@ -1091,6 +1107,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	}
 
 	/**
+	 * 手动调用容器的close方法时候会触发所有bean的销毁回调，发布关闭事件，执行bean的生命周期关闭方法，设置容器的状态为关闭。
 	 * Actually performs context closing: publishes a ContextClosedEvent and
 	 * destroys the singletons in the bean factory of this application context.
 	 * <p>Called by both {@code close()} and a JVM shutdown hook, if any.
@@ -1110,6 +1127,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 			try {
 				// Publish shutdown event.
+				// 发布容器关闭事件，任何监听ContextClosedEvent事件的监听器都可以收到一条消息
 				publishEvent(new ContextClosedEvent(this));
 			}
 			catch (Throwable ex) {
@@ -1127,21 +1145,27 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			}
 
 			// Destroy all cached singletons in the context's BeanFactory.
+			// 这个方法里面会执行自定义的销毁方法（@Bean），实现DisposableBean接口的方法，
+			// 以及InitDestroyAnnotationBeanPostProcessor#postProcessBeforeDestruction方法
 			destroyBeans();
 
 			// Close the state of this context itself.
+			// 设置容器上下文状态，
 			closeBeanFactory();
 
 			// Let subclasses do some final clean-up if they wish...
+			// 留给子类实现的自定义销毁逻辑
 			onClose();
 
 			// Reset local application listeners to pre-refresh state.
+			// 清理事件监听
 			if (this.earlyApplicationListeners != null) {
 				this.applicationListeners.clear();
 				this.applicationListeners.addAll(this.earlyApplicationListeners);
 			}
 
 			// Switch to inactive.
+			// 设置容器状态为关闭
 			this.active.set(false);
 		}
 	}
@@ -1158,6 +1182,10 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * @see org.springframework.beans.factory.config.ConfigurableBeanFactory#destroySingletons()
 	 */
 	protected void destroyBeans() {
+		/**
+		 * 具体逻辑通过容器的destroySingletons()方法实现。
+		 * @see DefaultListableBeanFactory#destroySingletons()
+		 */
 		getBeanFactory().destroySingletons();
 	}
 
@@ -1487,6 +1515,9 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * <p>A subclass will either create a new bean factory and hold a reference to it,
 	 * or return a single BeanFactory instance that it holds. In the latter case, it will
 	 * usually throw an IllegalStateException if refreshing the context more than once.
+	 * 此方法在如下子类中有实现
+	 * @see AbstractRefreshableApplicationContext#refreshBeanFactory()
+	 *
 	 * @throws BeansException if initialization of the bean factory failed
 	 * @throws IllegalStateException if already initialized and multiple refresh
 	 * attempts are not supported

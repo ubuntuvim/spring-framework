@@ -5,6 +5,7 @@ import org.springframework.beans.factory.config.DestructionAwareBeanPostProcesso
 import org.springframework.stereotype.Component;
 
 /**
+ * 自定义销毁回调的后置处理器
  * @Author: ubuntuvim
  * @Date: 2020/10/18 下午5:23
  */

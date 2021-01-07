@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
  * @Author: ubuntuvim
  * @Date: 2020/10/18 上午1:41
  */
-@Component
+//@Component
 public class MyBeanPostProcessorImpl implements BeanPostProcessor {
 
 	@Override

@@ -159,6 +159,7 @@ public class InitDestroyAnnotationBeanPostProcessor
 	 */
 	@Override
 	public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+		// 获取@PostConstruct注解定义的方法
 		LifecycleMetadata metadata = findLifecycleMetadata(bean.getClass());
 		try {
 			metadata.invokeInitMethods(bean, beanName);
@@ -182,7 +183,6 @@ public class InitDestroyAnnotationBeanPostProcessor
 		LifecycleMetadata metadata = findLifecycleMetadata(bean.getClass());
 		try {
 			// 执行@PreDestroy注解的销毁回调方法，如果一个类中多个方法都是用了这个注解，会遍历执行所有的注解方法
-			// 和初始化方法不一样，销毁方法可以执行多个，初始化的@PostConstruct只会执行一个
 			metadata.invokeDestroyMethods(bean, beanName);
 		}
 		catch (InvocationTargetException ex) {
@@ -216,6 +216,7 @@ public class InitDestroyAnnotationBeanPostProcessor
 			synchronized (this.lifecycleMetadataCache) {
 				metadata = this.lifecycleMetadataCache.get(clazz);
 				if (metadata == null) {
+					// 通过反射获取到使用@PostConstruct注解的方法，并包装成LifecycleMetadata
 					metadata = buildLifecycleMetadata(clazz);
 					this.lifecycleMetadataCache.put(clazz, metadata);
 				}
@@ -225,6 +226,11 @@ public class InitDestroyAnnotationBeanPostProcessor
 		return metadata;
 	}
 
+	/**
+	 * 找出目标类中的初始化方法（使用@PostConstruct注解的方法）和销毁方法（使用@PreDestory注解的方法）
+	 * @param clazz 目标类
+	 * @return
+	 */
 	private LifecycleMetadata buildLifecycleMetadata(final Class<?> clazz) {
 		if (!AnnotationUtils.isCandidateClass(clazz, Arrays.asList(this.initAnnotationType, this.destroyAnnotationType))) {
 			return this.emptyLifecycleMetadata;
@@ -238,6 +244,8 @@ public class InitDestroyAnnotationBeanPostProcessor
 			final List<LifecycleElement> currInitMethods = new ArrayList<>();
 			final List<LifecycleElement> currDestroyMethods = new ArrayList<>();
 
+			// 通过反射获取到目标类的方法列表，然后遍历这些方法判断是否有使用@PostConstruct注解
+			// 如果有则保存到currInitMethods
 			ReflectionUtils.doWithLocalMethods(targetClass, method -> {
 				if (this.initAnnotationType != null && method.isAnnotationPresent(this.initAnnotationType)) {
 					LifecycleElement element = new LifecycleElement(method);

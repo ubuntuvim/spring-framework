@@ -20,6 +20,7 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.context.support.AbstractRefreshableConfigApplicationContext;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.io.Resource;
@@ -195,6 +196,8 @@ public abstract class AbstractRefreshableWebApplicationContext extends AbstractR
 
 	/**
 	 * Initialize the theme capability.
+	 * 重写父类的方法：
+	 * @see AbstractApplicationContext#onRefresh()
 	 */
 	@Override
 	protected void onRefresh() {

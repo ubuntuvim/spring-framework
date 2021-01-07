@@ -16,7 +16,7 @@ public class Config {
 //		return new InitCallbackBean();
 //	}
 
-	@Bean//(destroyMethod = "beanDestoryCallbackMethod")
+	@Bean(destroyMethod = "beanDestoryCallbackMethod")
 	public DestoryCallbackBean destoryCallbackBean() {
 		return new DestoryCallbackBean();
 	}

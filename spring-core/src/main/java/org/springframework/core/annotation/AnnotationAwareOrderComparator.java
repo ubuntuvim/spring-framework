@@ -16,14 +16,14 @@
 
 package org.springframework.core.annotation;
 
-import java.lang.reflect.AnnotatedElement;
-import java.util.Arrays;
-import java.util.List;
-
 import org.springframework.core.DecoratingProxy;
 import org.springframework.core.OrderComparator;
 import org.springframework.core.annotation.MergedAnnotations.SearchStrategy;
 import org.springframework.lang.Nullable;
+
+import java.lang.reflect.AnnotatedElement;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * {@code AnnotationAwareOrderComparator} is an extension of
@@ -35,6 +35,14 @@ import org.springframework.lang.Nullable;
  *
  * <p>Consult the Javadoc for {@link OrderComparator} for details on the
  * sort semantics for non-ordered objects.
+ *
+ * AnnotationAwareOrderComparator是Spring内部的核心排序组件，熟悉Spring的小伙伴应该都不会陌生，
+ * 通过这个类，可以对实现了PriorityOrdered、Ordered以及被@Order注解修饰的类进行统一的排序。
+ * Spring在内部启动时，对很多组件都设置过排序数值以便能顺利进行排序。
+ * 如AbstractApplicationContext#refresh()中对
+ * BeanPostProcessor、BeanFactoryPostProcessor、BeanDefinitionRegistryPostProcessor都是经过排序后才启动的；
+ * 又如SpringBoot中的条件注解ConditionalOnClass、ConditionalOnBean、ConditionalOnProperty等都是通过设置Condition的排序值进行排序的，
+ * 若不进行排序，试想即便是配置了ConditionalOnBean，但是却无法加载到对应的class，那加载bean也没有意义。
  *
  * @author Juergen Hoeller
  * @author Oliver Gierke

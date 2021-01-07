@@ -86,9 +86,19 @@ import java.util.concurrent.ConcurrentHashMap;
  * Remove or turn off the default annotation configuration there if you intend
  * to specify a custom {@code AutowiredAnnotationBeanPostProcessor} bean definition.
  *
+ * 当你的项目使用了@ComponentScan注解，或者使用了<context:annotation-config>标签，或者<context:component-scan>标签
+ * 容器会自动创建AutowiredAnnotationBeanPostProcess后置处理器，
+ * 如果你自定义了或者重写了它，在项目加载时请把它排除，以免冲突。
+ *
  * <p><b>NOTE:</b> Annotation injection will be performed <i>before</i> XML injection;
  * thus the latter configuration will override the former for properties wired through
  * both approaches.
+ * 需要注意：注解方法注入在xml配置注入之前执行，所以对于同一个类的属性，如果同时使用了@Autowired和xml配置注入，
+ * 那么注解注入会被xml配置的注入覆盖。
+ * 具体原因请看注入的源码逻辑，注入时先处理注解方式的注入，最后才执行xml配置方式的注入
+ * @see AbstractAutowireCapableBeanFactory#populateBean(String, RootBeanDefinition, BeanWrapper)
+ * 演示案例：
+ * @see com.ubuntuvim.spring.autowiredorder.Person
  *
  * <h3>{@literal @}Lookup Methods</h3>
  * <p>In addition to regular injection points as discussed above, this post-processor
@@ -96,6 +106,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * methods to be replaced by the container at runtime. This is essentially a type-safe
  * version of {@code getBean(Class, args)} and {@code getBean(String, args)}.
  * See {@link Lookup @Lookup's javadoc} for details.
+ * @Lookup 注解也是用于完成依赖注入，但是这个注解比较特殊，这个注解通常用于注入可变对象，比如注入prototype类型的bean。
+ * 而@Autowired通常用于注入不可变对象，一般是单例对象，一经注入之后，这个属性的值是不会变的。
+ * 使用@Lookup注解的属性，每次都会获取一个新的对象注入到属性上
  *
  * @author Juergen Hoeller
  * @author Mark Fisher
@@ -112,6 +125,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
+	// 可处理的注入注解，比如@Autowired，@Value，默认情况下在构造方法中就会初始化这个数组，值有Autowired.class,Value.class,Inject.class
 	private final Set<Class<? extends Annotation>> autowiredAnnotationTypes = new LinkedHashSet<>(4);
 
 	private String requiredParameterName = "required";
@@ -120,11 +134,13 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 
 	private int order = Ordered.LOWEST_PRECEDENCE - 2;
 
+	// 保存BeanFactoryAware注入容器对象。
 	@Nullable
 	private ConfigurableListableBeanFactory beanFactory;
 
 	private final Set<String> lookupMethodsChecked = Collections.newSetFromMap(new ConcurrentHashMap<>(256));
 
+	// 候选构造函数缓存，容器在完成依赖注入的时候可能通过构造器完成属性的注入，此时需要用到构造器
 	private final Map<Class<?>, Constructor<?>[]> candidateConstructorsCache = new ConcurrentHashMap<>(256);
 
 	private final Map<String, InjectionMetadata> injectionMetadataCache = new ConcurrentHashMap<>(256);
@@ -150,8 +166,31 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 		}
 	}
 
+//	@Override
+//	public String toString() {
+//		return super.toString();
+//	}
+
+	@Override
+	public String toString() {
+		return "AutowiredAnnotationBeanPostProcessor{" +
+				"autowiredAnnotationTypes=" + autowiredAnnotationTypes +
+				", requiredParameterName='" + requiredParameterName + '\'' +
+				", requiredParameterValue=" + requiredParameterValue +
+				", order=" + order +
+				", beanFactory=" + beanFactory +
+				", lookupMethodsChecked=" + lookupMethodsChecked +
+				", candidateConstructorsCache=" + candidateConstructorsCache +
+				", injectionMetadataCache=" + injectionMetadataCache +
+				'}';
+	}
 
 	/**
+	 * AutowiredAnnotationBeanPostProcess默认只处理@Autowired，@Value，@Inject这三个注解，
+	 * 如果用户也想使用这个后置处理器处理自定义的注解，可以通过此方法设置注解。
+	 * 比如案例：
+	 * @see com.ubuntuvim.spring.autowire.Config
+	 *
 	 * Set the 'autowired' annotation type, to be used on constructors, fields,
 	 * setter methods, and arbitrary config methods.
 	 * <p>The default autowired annotation types are the Spring-provided
@@ -163,6 +202,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 	 */
 	public void setAutowiredAnnotationType(Class<? extends Annotation> autowiredAnnotationType) {
 		Assert.notNull(autowiredAnnotationType, "'autowiredAnnotationType' must not be null");
+		// 如果用户也使用了AutowiredAnnotationBeanPostProcessor，则把它默认处理的注解清理，以免重复处理。
 		this.autowiredAnnotationTypes.clear();
 		this.autowiredAnnotationTypes.add(autowiredAnnotationType);
 	}
@@ -219,10 +259,18 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 		this.beanFactory = (ConfigurableListableBeanFactory) beanFactory;
 	}
 
-
+	/**
+	 * 实现接口MergedBeanDefinitionPostProcessor的方法：
+	 *  查询bean定义中是否有使用@Autowired注解的属性并设置到缓存injectionMetadataCache中
+	 * @param beanDefinition the merged bean definition for the bean
+	 * @param beanType the actual type of the managed bean instance
+	 * @param beanName the name of the bean
+	 */
 	@Override
 	public void postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName) {
+		// 查询bean实例的属性中使用@Autowired注解的并缓存好。
 		InjectionMetadata metadata = findAutowiringMetadata(beanName, beanType, null);
+		// 检查属性是否已经被注入过，如果没有则把属性设置到缓存externallyManagedConfigMembers中。
 		metadata.checkConfigMembers(beanDefinition);
 	}
 
@@ -232,6 +280,13 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 		this.injectionMetadataCache.remove(beanName);
 	}
 
+	/**
+	 * 实现接口SmartInstantiationAwareBeanPostProcessor的方法
+	 * @param beanClass
+	 * @param beanName
+	 * @return
+	 * @throws BeanCreationException
+	 */
 	@Override
 	@Nullable
 	public Constructor<?>[] determineCandidateConstructors(Class<?> beanClass, final String beanName)
@@ -299,6 +354,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 						else if (primaryConstructor != null) {
 							continue;
 						}
+						// 搜索构造方法上是否有使用@Autowired注解
 						MergedAnnotation<?> ann = findAutowiredAnnotation(candidate);
 						if (ann == null) {
 							Class<?> userClass = ClassUtils.getUserClass(beanClass);
@@ -458,6 +514,11 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 		return metadata;
 	}
 
+	/**
+	 * 找到使用@Autowired的属性并包装成 {@link InjectionMetadata}
+	 * @param clazz
+	 * @return
+	 */
 	private InjectionMetadata buildAutowiringMetadata(final Class<?> clazz) {
 		if (!AnnotationUtils.isCandidateClass(clazz, this.autowiredAnnotationTypes)) {
 			return InjectionMetadata.EMPTY;

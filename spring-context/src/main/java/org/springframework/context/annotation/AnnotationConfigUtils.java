@@ -139,6 +139,16 @@ public abstract class AnnotationConfigUtils {
 	}
 
 	/**
+	 * 往容器注册后续用于扫描注解的bean定义信息，
+	 * 比如：
+	 * 1. {@link ContextAnnotationAutowireCandidateResolver} 用于扫描@Lazy注解、@Qualifier注解
+	 * 2. {@link ConfigurationClassPostProcessor} 用于扫描@Component、@Service、@Configuration、@Controller等注解
+	 * 3. {@link AutowiredAnnotationBeanPostProcessor} 用于扫描@Autowired、@Value、@Inject、@Lookup注解
+	 * 4. {@link CommonAnnotationBeanPostProcessor} 用于扫描@Resource/@PostConstruct/@PreDestroy注解
+	 * 5. {@link org.springframework.orm.jpa.support.PersistenceAnnotationBeanPostProcessor} 用于扫描@PersistenceContext、@PersistenceUnit注解
+	 * 6. {@link EventListenerMethodProcessor}用于扫描@EventListener注解
+	 * 7. {@link DefaultEventListenerFactory} 将使用@EventListener注解的方法转换成ApplicationListener类
+	 *
 	 * Register all relevant annotation post processors in the given registry.
 	 * @param registry the registry to operate on
 	 * @param source the configuration source element (already extracted)
@@ -152,17 +162,19 @@ public abstract class AnnotationConfigUtils {
 		DefaultListableBeanFactory beanFactory = unwrapDefaultListableBeanFactory(registry);
 		if (beanFactory != null) {
 			if (!(beanFactory.getDependencyComparator() instanceof AnnotationAwareOrderComparator)) {
+				// 初始化一个后置处理器排序类实例
 				beanFactory.setDependencyComparator(AnnotationAwareOrderComparator.INSTANCE);
 			}
 			if (!(beanFactory.getAutowireCandidateResolver() instanceof ContextAnnotationAutowireCandidateResolver)) {
-				// 设置autowireCandidateResolver属性（设置自动注入候选对象的解析器，用于判断BeanDefinition是否为候选对象）
+				// 设置自动注入候选对象的解析器，用于判断BeanDefinition是否为有使用@Value，@Qualifier，@Lazy注解
 				beanFactory.setAutowireCandidateResolver(new ContextAnnotationAutowireCandidateResolver());
 			}
 		}
 
 		Set<BeanDefinitionHolder> beanDefs = new LinkedHashSet<>(8);
 
-		// 注册@Configuration注解处理器
+		// 往容器中注入一个ConfigurationClassPostProcessor的bean定义信息。
+		// 这个bean是注解模式下的非常重要的一个后置处理器，使用@Component、@Service、@Configuration、@Controller等注解的类都是通过它扫描并转换成bean定义注册到容器中。
 		if (!registry.containsBeanDefinition(CONFIGURATION_ANNOTATION_PROCESSOR_BEAN_NAME)) {
 			RootBeanDefinition def = new RootBeanDefinition(ConfigurationClassPostProcessor.class);
 			def.setSource(source);

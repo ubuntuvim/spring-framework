@@ -313,6 +313,7 @@ public abstract class ReflectionUtils {
 	 * @see #doWithMethods
 	 */
 	public static void doWithLocalMethods(Class<?> clazz, MethodCallback mc) {
+		// 通过反射获取目标类内部的方法
 		Method[] methods = getDeclaredMethods(clazz, false);
 		for (Method method : methods) {
 			try {
@@ -455,7 +456,7 @@ public abstract class ReflectionUtils {
 		Method[] result = declaredMethodsCache.get(clazz);
 		if (result == null) {
 			try {
-				// 拿到使用@Bean注解的方法
+				// 拿到类中的所有方法
 				Method[] declaredMethods = clazz.getDeclaredMethods();
 				List<Method> defaultMethods = findConcreteMethodsOnInterfaces(clazz);
 				if (defaultMethods != null) {
